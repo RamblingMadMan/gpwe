@@ -15,6 +15,6 @@ set_target_properties(
 	CXX_STANDARD_REQUIRED ON
 )
 
-target_include_directories(gpwe-client PRIVATE ${GPWE_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS})
+target_include_directories(gpwe-client PRIVATE ${SDL2_INCLUDE_DIRS})
 
-target_link_libraries(gpwe-client fmt Freetype::Freetype FreeImage::FreeImage ${SDL2_LIBRARIES})
+target_link_libraries(gpwe-client gpwe-renderer-gl43 Freetype::Freetype FreeImage::FreeImage ${SDL2_LIBRARIES})

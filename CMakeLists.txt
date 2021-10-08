@@ -5,7 +5,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 project(gpwe VERSION 0.0.0 LANGUAGES CXX)
 
 execute_process(
-	COMMAND git log -1 --format=%h
+	COMMAND git rev-parse --short HEAD
 	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
 	OUTPUT_VARIABLE GPWE_GIT_HASH
 	OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -19,14 +19,24 @@ set(
 	${PROJECT_BINARY_DIR}/include/gpwe/config.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/log.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/sys.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Shape.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Renderer.hpp
 )
 
 configure_file(${GPWE_INCLUDE_DIR}/gpwe/config.hpp.in include/gpwe/config.hpp)
 
 # Dependencies
 
-add_subdirectory(deps/fmt)
+add_library(plf-list INTERFACE)
+
+target_include_directories(plf-list INTERFACE deps/plf_list)
+
+add_subdirectory(deps/glm EXCLUDE_FROM_ALL)
+add_subdirectory(deps/fmt EXCLUDE_FROM_ALL)
+add_subdirectory(deps/glbinding EXCLUDE_FROM_ALL)
 
 # GPWE targets
 
+add_subdirectory(base)
+add_subdirectory(renderer-gl43)
 add_subdirectory(client)

@@ -1,3 +1,12 @@
 [submodule "deps/fmt"]
 	path = deps/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "deps/glbinding"]
+	path = deps/glbinding
+	url = https://github.com/cginternals/glbinding.git
+[submodule "deps/plf_list"]
+	path = deps/plf_list
+	url = https://github.com/mattreecebentley/plf_list.git
+[submodule "deps/glm"]
+	path = deps/glm
+	url = https://github.com/g-truc/glm.git

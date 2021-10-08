@@ -3,6 +3,7 @@
 
 namespace gpwe::sys{
 	void init();
+	int exec();
 }
 
 #endif // !GPWE_SYS_HPP
