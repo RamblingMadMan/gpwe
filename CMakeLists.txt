@@ -4,6 +4,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 project(gpwe VERSION 0.0.0 LANGUAGES C CXX)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+	set(GPWE_MASTER_PROJECT TRUE)
+else()
+	set(GPWE_MASTER_PROJECT FALSE)
+endif()
+
 execute_process(
 	COMMAND git rev-parse --short HEAD
 	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
@@ -24,6 +30,7 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/Texture.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Model.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Renderer.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/App.hpp
 )
 
 configure_file(${GPWE_INCLUDE_DIR}/gpwe/config.hpp.in include/gpwe/config.hpp)
@@ -53,4 +60,8 @@ addAssimp()
 
 add_subdirectory(base)
 add_subdirectory(renderer-gl43)
-add_subdirectory(client)
+
+if(GPWE_MASTER_PROJECT)
+	add_subdirectory(testgame)
+	add_subdirectory(client)
+endif()

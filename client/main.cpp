@@ -19,6 +19,7 @@
 #include "gpwe/config.hpp"
 #include "gpwe/sys.hpp"
 #include "gpwe/log.hpp"
+#include "gpwe/App.hpp"
 #include "gpwe/Camera.hpp"
 #include "gpwe/Shape.hpp"
 #include "gpwe/Renderer.hpp"
@@ -31,9 +32,18 @@ using GLGetProcFn = GLProc(*)(const char*);
 std::uint16_t gpweWidth, gpweHeight;
 SDL_Window *gpweWindow = nullptr;
 SDL_GLContext gpweContext = nullptr;
+
+void *gpweAppLib = nullptr;
 void *gpweRendererLib = nullptr;
+
+std::unique_ptr<App> gpweApp;
 std::unique_ptr<Renderer> gpweRenderer;
-std::unique_ptr<Renderer>(*gpweCreateRendererFn)(GLGetProcFn);
+
+using GPWECreateAppFn = std::unique_ptr<App>(*)();
+using GPWECreateRendererFn = std::unique_ptr<Renderer>(*)(GLGetProcFn);
+
+GPWECreateAppFn gpweCreateApp;
+GPWECreateRendererFn gpweCreateRenderer;
 
 static FT_Library gpweFtLib = nullptr;
 
@@ -172,8 +182,8 @@ void initVideo(std::uint16_t w, std::uint16_t h){
 
 			std::atexit([]{ SDL_UnloadObject(gpweRendererLib); });
 
-			gpweCreateRendererFn = reinterpret_cast<std::unique_ptr<gpwe::Renderer>(*)(GLGetProcFn)>(SDL_LoadFunction(gpweRendererLib, "gpweCreateRenderer_gl43"));
-			if(!gpweCreateRendererFn){
+			gpweCreateRenderer = reinterpret_cast<std::unique_ptr<gpwe::Renderer>(*)(GLGetProcFn)>(SDL_LoadFunction(gpweRendererLib, "gpweCreateRenderer_gl43"));
+			if(!gpweCreateRenderer){
 				return SDL_GetError();
 			}
 
@@ -254,6 +264,23 @@ void sys::init(std::uint16_t w, std::uint16_t h){
 	initLibraries();
 	initVideo(w, h);
 
+	// Load app
+	gpweAppLib = SDL_LoadObject("./libgpwe-game-test.so");
+	if(!gpweAppLib){
+		logErrorLn("{}", SDL_GetError());
+		std::exit(3);
+	}
+
+	std::atexit([]{ SDL_UnloadObject(gpweAppLib); });
+
+	auto createAppFn = SDL_LoadFunction(gpweAppLib, "gpweCreateApp_test");
+	if(!createAppFn){
+		logErrorLn("{}", SDL_GetError());
+		std::exit(3);
+	}
+
+	gpweCreateApp = reinterpret_cast<GPWECreateAppFn>(createAppFn);
+
 	printVersions();
 }
 
@@ -262,16 +289,27 @@ int sys::exec(){
 
 	logHeader("Starting Engine");
 
-	gpweRenderer = gpweCreateRendererFn([](const char *name) -> GLProc{ return (GLProc)SDL_GL_GetProcAddress(name); });
+	gpweRenderer = gpweCreateRenderer([](const char *name) -> GLProc{ return (GLProc)SDL_GL_GetProcAddress(name); });
+
+	if(!gpweRenderer){
+		logErrorLn("Error in gpweCreateRenderer_gl43");
+		std::exit(4);
+	}
+
+	gpweApp = gpweCreateApp();
+
+	if(!gpweApp){
+		gpweRenderer.reset();
+		logErrorLn("Error in gpweCreateApp_test");
+		std::exit(4);
+	}
 
 	Camera cam(90.f, float(gpweWidth) / float(gpweHeight));
 
 	cam.setPosition(glm::vec3(0.f, 0.f, -1.f));
 
-	shapes::Cube testShape(0.5f);
 	shapes::Square screenShape(2.f);
 
-	auto testGroup = gpweRenderer->createGroup(&testShape);
 	auto screenGroup = gpweRenderer->createGroup(&screenShape);
 
 	std::fflush(stdout);
@@ -287,7 +325,7 @@ int sys::exec(){
 	bool running = true;
 	bool rotateCam = false;
 
-	float camSpeed = 0.1f;
+	float camRotSpeed = 0.1f, camMoveSpeed = 0.00075f;
 	glm::vec2 camRot;
 	glm::vec3 camMove = { 0.f, 0.f, 0.f };
 
@@ -383,22 +421,26 @@ int sys::exec(){
 		auto moveAmnt = moveForward + moveRight + moveUp;
 
 		if(glm::length(moveAmnt) > 0.f){
-			cam.translate(glm::normalize(moveAmnt) * loopDt * 0.001f);
+			cam.translate(glm::normalize(moveAmnt) * camMoveSpeed * loopDt);
 		}
 
 		if(rotateCam){
-			camRot *= camSpeed * loopDt;
+			camRot *= camRotSpeed * loopDt;
 			cam.rotate(glm::radians(-camRot.x), glm::vec3(0.f, 1.f, 0.f));
 			cam.rotate(glm::radians(camRot.y), glm::vec3(1.f, 0.f, 0.f));
 		}
+
+		gpweApp->update(loopDt);
 
 		gpweRenderer->present(&cam);
 
 		SDL_GL_SwapWindow(gpweWindow);
 	}
 
+	// must destroy app before renderer
+	gpweApp.reset();
+
 	// These aren't required
-	gpweRenderer->destroyGroup(testGroup);
 	gpweRenderer->destroyGroup(screenGroup);
 
 	// Must destroy renderer before context and window
@@ -406,6 +448,8 @@ int sys::exec(){
 
 	return 0;
 }
+
+Renderer *sys::renderer(){ return gpweRenderer.get(); }
 
 int main(int argc, char *argv[]){
 	sys::init(1280, 720);

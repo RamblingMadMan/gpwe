@@ -226,6 +226,7 @@ void RendererGL43::present(const Camera *cam) noexcept{
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
 
 	glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
 
