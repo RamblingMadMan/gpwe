@@ -26,6 +26,7 @@ using namespace gpwe;
 using GLProc = void(*)();
 using GLGetProcFn = GLProc(*)(const char*);
 
+std::uint16_t gpweWidth, gpweHeight;
 SDL_Window *gpweWindow = nullptr;
 SDL_GLContext gpweContext = nullptr;
 void *gpweRendererLib = nullptr;
@@ -98,7 +99,7 @@ void initLibraries(){
 	gpwe::log("\n");
 }
 
-void initVideo(){
+void initVideo(std::uint16_t w, std::uint16_t h){
 	constexpr std::string_view msgs[] = {
 		"Setting Attributes",
 		"Creating window",
@@ -133,13 +134,16 @@ void initVideo(){
 
 			return std::nullopt;
 		},
-		[]() -> std::optional<std::string>{
-			gpweWindow = SDL_CreateWindow("GPWE", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_OPENGL);
+		[w, h]() -> std::optional<std::string>{
+			gpweWindow = SDL_CreateWindow("GPWE", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL);
 			if(!gpweWindow){
 				return SDL_GetError();
 			}
 
 			std::atexit([]{ SDL_DestroyWindow(gpweWindow); });
+
+			gpweWidth = w;
+			gpweHeight = h;
 
 			return std::nullopt;
 		},
@@ -233,7 +237,7 @@ void printVersions(){
 	gpwe::log("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
 }
 
-void sys::init(){
+void sys::init(std::uint16_t w, std::uint16_t h){
 	auto launchT = std::chrono::system_clock::now();
 	std::time_t launchTime = std::chrono::system_clock::to_time_t(launchT);
 	logLn("{}", std::ctime(&launchTime));
@@ -244,7 +248,7 @@ void sys::init(){
 	);
 
 	initLibraries();
-	initVideo();
+	initVideo(w, h);
 
 	printVersions();
 }
@@ -256,7 +260,7 @@ int sys::exec(){
 
 	gpweRenderer = gpweCreateRendererFn([](const char *name) -> GLProc{ return (GLProc)SDL_GL_GetProcAddress(name); });
 
-	Camera cam(90.f, 1280.f / 720.f);
+	Camera cam(90.f, float(gpweWidth) / float(gpweHeight));
 
 	cam.setPosition(glm::vec3(0.f, 0.f, -1.f));
 
@@ -400,6 +404,6 @@ int sys::exec(){
 }
 
 int main(int argc, char *argv[]){
-	sys::init();
+	sys::init(1280, 720);
 	return sys::exec();
 }
