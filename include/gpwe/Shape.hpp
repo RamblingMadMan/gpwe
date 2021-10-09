@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <array>
+#include <vector>
 
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
@@ -97,9 +98,7 @@ namespace gpwe{
 				std::uint32_t numPoints() const noexcept override{ return std::size(m_verts); }
 
 				const glm::vec3 *vertices() const noexcept override{ return m_verts; }
-
 				const glm::vec3 *normals() const noexcept override{ return m_norms; }
-
 				const glm::vec2 *uvs(std::uint8_t channel = 0) const noexcept override;
 
 				std::uint32_t numIndices() const noexcept override{ return 36; }
@@ -125,6 +124,40 @@ namespace gpwe{
 		class Cube: public Cuboid{
 			public:
 				Cube(float d): Cuboid(d, d, d){}
+		};
+
+		class TriangleMesh: public Shape{
+			public:
+				TriangleMesh(
+					std::vector<glm::vec3> verts_,
+					std::vector<glm::vec3> norms_,
+					std::vector<glm::vec2> uvs_,
+					std::vector<std::uint32_t> indices_
+				)
+					: m_verts(std::move(verts_))
+					, m_norms(std::move(norms_))
+					, m_uvs(std::move(uvs_))
+					, m_indices(std::move(indices_))
+				{
+					assert(m_verts.size() == m_norms.size() && m_verts.size() == m_uvs.size());
+				}
+
+				Kind kind() const noexcept override{ return Kind::tris; }
+
+				std::uint32_t numPoints() const noexcept override{ return m_verts.size(); }
+
+				const glm::vec3 *vertices() const noexcept override{ return m_verts.data(); }
+				const glm::vec3 *normals() const noexcept override{ return m_norms.data(); }
+				const glm::vec2 *uvs(std::uint8_t channel = 0) const noexcept override{ return m_uvs.data(); }
+
+				std::uint32_t numIndices() const noexcept override{ return m_indices.size(); }
+
+				const std::uint32_t *indices() const noexcept override{ return m_indices.data(); }
+
+			private:
+				std::vector<glm::vec3> m_verts, m_norms;
+				std::vector<glm::vec2> m_uvs;
+				std::vector<std::uint32_t> m_indices;
 		};
 	}
 }

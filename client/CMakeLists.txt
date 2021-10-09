@@ -17,4 +17,6 @@ set_target_properties(
 
 target_include_directories(gpwe-client PRIVATE ${SDL2_INCLUDE_DIRS})
 
-target_link_libraries(gpwe-client gpwe-renderer-gl43 Freetype::Freetype FreeImage::FreeImage ${SDL2_LIBRARIES})
+target_link_libraries(gpwe-client gpwe-base Freetype::Freetype FreeImage::FreeImage ${SDL2_LIBRARIES})
+
+add_dependencies(gpwe-client gpwe-renderer-gl43)

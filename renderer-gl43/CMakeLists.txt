@@ -22,4 +22,3 @@ target_link_libraries(gpwe-renderer-gl43 PUBLIC gpwe-base)
 add_custom_command(TARGET gpwe-renderer-gl43 POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:gpwe-renderer-gl43> ${CMAKE_BINARY_DIR}/client/
 )
-

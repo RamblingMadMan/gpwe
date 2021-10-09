@@ -5,6 +5,7 @@
 - SDL2
 - Freetype
 - FreeImage
+- Assimp
 
 ### Ubuntu
 

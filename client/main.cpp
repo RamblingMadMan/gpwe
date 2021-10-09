@@ -14,6 +14,8 @@
 
 #include "glm/glm.hpp"
 
+#include "assimp/version.h"
+
 #include "gpwe/config.hpp"
 #include "gpwe/sys.hpp"
 #include "gpwe/log.hpp"
@@ -208,19 +210,21 @@ void printVersions(){
 	SDL_version sdlVer;
 	SDL_GetVersion(&sdlVer);
 
-	FT_Int ftMaj, ftMin, ftRev;
-	FT_Library_Version(gpweFtLib, &ftMaj, &ftMin, &ftRev);
+	FT_Int ftMaj, ftMin, ftPatch;
+	FT_Library_Version(gpweFtLib, &ftMaj, &ftMin, &ftPatch);
 
 	std::string_view libs[] = {
 		"SDL",
 		"Freetype",
-		"FreeImage"
+		"FreeImage",
+		"Assimp"
 	};
 
 	std::string versions[] = {
 		fmt::format("{}.{}.{}", sdlVer.major, sdlVer.minor, sdlVer.patch),
-		fmt::format("{}.{}.{}", ftMaj, ftMin, ftRev),
-		FreeImage_GetVersion()
+		fmt::format("{}.{}.{}", ftMaj, ftMin, ftPatch),
+		FreeImage_GetVersion(),
+		fmt::format("{}.{}.{}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch())
 	};
 
 	logHeader("Version Info");

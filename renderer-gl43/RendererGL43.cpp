@@ -42,26 +42,58 @@ struct DrawElementsIndirectCommand{
 	GLuint baseInstance;
 };
 
-RenderGroupGL43::RenderGroupGL43(const Shape *shape, std::uint32_t n){
+RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const Shape **shapes, std::uint32_t n)
+	: m_numShapes(numShapes)
+{
 	glCreateVertexArrays(1, &m_vao);
 	glCreateBuffers(std::size(m_bufs), m_bufs);
 
-	DrawElementsIndirectCommand cmd;
-	cmd.count = shape->numIndices();
-	cmd.primCount = n;
-	cmd.firstIndex = 0;
-	cmd.baseVertex = 0;
-	cmd.baseInstance = 0;
+	std::vector<DrawElementsIndirectCommand> cmds;
+	cmds.resize(numShapes);
 
-	glNamedBufferStorage(m_bufs[0], sizeof(glm::vec3) * shape->numPoints(), shape->vertices(), GL_MAP_READ_BIT);
-	glNamedBufferStorage(m_bufs[1], sizeof(glm::vec3) * shape->numPoints(), shape->normals(), GL_MAP_READ_BIT);
-	glNamedBufferStorage(m_bufs[2], sizeof(glm::vec2) * shape->numPoints(), shape->uvs(), GL_MAP_READ_BIT);
-	glNamedBufferStorage(m_bufs[3], sizeof(std::uint32_t) * shape->numIndices(), shape->indices(), GL_MAP_READ_BIT);
-	glNamedBufferStorage(m_bufs[4], sizeof(DrawElementsIndirectCommand), &cmd, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+	std::uint32_t totalNumPoints = 0, totalNumIndices = 0;
+
+	for(std::uint32_t i = 0; i < numShapes; i++){
+		auto shape = shapes[i];
+		auto &cmd = cmds[i];
+
+		cmd.count = shape->numIndices();
+		cmd.primCount = n;
+		cmd.firstIndex = totalNumIndices;
+		cmd.baseVertex = totalNumPoints;
+		cmd.baseInstance = 0;
+
+		totalNumPoints += shape->numPoints();
+		totalNumIndices += shape->numIndices();
+	}
+
+	std::vector<glm::vec3> verts, norms;
+	std::vector<glm::vec2> uvs;
+	std::vector<std::uint32_t> indices;
+
+	verts.reserve(totalNumPoints);
+	norms.reserve(totalNumPoints);
+	uvs.reserve(totalNumPoints);
+	indices.reserve(totalNumIndices);
+
+	for(std::uint32_t i = 0; i < numShapes; i++){
+		auto shape = shapes[i];
+
+		verts.insert(verts.end(), shape->vertices(), shape->vertices() + shape->numPoints());
+		norms.insert(norms.end(), shape->normals(), shape->normals() + shape->numPoints());
+		uvs.insert(uvs.end(), shape->uvs(), shape->uvs() + shape->numPoints());
+		indices.insert(indices.end(), shape->indices(), shape->indices() + shape->numIndices());
+	}
+
+	glNamedBufferStorage(m_bufs[0], sizeof(glm::vec3) * totalNumPoints, verts.data(), GL_MAP_READ_BIT);
+	glNamedBufferStorage(m_bufs[1], sizeof(glm::vec3) * totalNumPoints, norms.data(), GL_MAP_READ_BIT);
+	glNamedBufferStorage(m_bufs[2], sizeof(glm::vec2) * totalNumPoints, uvs.data(), GL_MAP_READ_BIT);
+	glNamedBufferStorage(m_bufs[3], sizeof(std::uint32_t) * totalNumIndices, indices.data(), GL_MAP_READ_BIT);
+	glNamedBufferStorage(m_bufs[4], sizeof(DrawElementsIndirectCommand) * numShapes, cmds.data(), GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
 	m_cmdPtr = glMapNamedBufferRange(
 		m_bufs[4],
-		0, sizeof(DrawElementsIndirectCommand),
+		0, sizeof(DrawElementsIndirectCommand) * numShapes,
 		GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT
 	);
 
@@ -93,13 +125,16 @@ RenderGroupGL43::~RenderGroupGL43(){
 void RenderGroupGL43::draw() const noexcept{
 	glBindVertexArray(m_vao);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_bufs[4]);
-	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 1, sizeof(DrawElementsIndirectCommand));
+	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, m_numShapes, sizeof(DrawElementsIndirectCommand));
 }
 
 void RenderGroupGL43::setNumInstances(std::uint32_t n){
-	auto cmd = reinterpret_cast<DrawElementsIndirectCommand*>(m_cmdPtr);
-	cmd->primCount = n;
-	glFlushMappedNamedBufferRange(m_bufs[0], offsetof(DrawElementsIndirectCommand, primCount), sizeof(GLuint));
+	auto cmds = reinterpret_cast<DrawElementsIndirectCommand*>(m_cmdPtr);
+	for(std::uint32_t i = 0; i < m_numShapes; i++){
+		auto cmd = cmds + i;
+		cmd->primCount = n;
+		glFlushMappedNamedBufferRange(m_bufs[0], (i * sizeof(DrawElementsIndirectCommand)) + offsetof(DrawElementsIndirectCommand, primCount), sizeof(GLuint));
+	}
 }
 
 std::uint32_t RenderGroupGL43::numInstances() const noexcept{
@@ -226,8 +261,8 @@ void RendererGL43::present(const Camera *cam) noexcept{
 	glBlitFramebuffer(0, 0, w, h, 0, 0, oldW, oldH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-std::unique_ptr<RenderGroup> RendererGL43::doCreateGroup(const Shape *shape){
-	return std::make_unique<RenderGroupGL43>(shape);
+std::unique_ptr<RenderGroup> RendererGL43::doCreateGroup(std::uint32_t numShapes, const Shape **shapes){
+	return std::make_unique<RenderGroupGL43>(numShapes, shapes);
 }
 
 std::unique_ptr<RenderProgram> RendererGL43::doCreateProgram(RenderProgram::Kind kind, std::string_view src){

@@ -73,7 +73,8 @@ namespace gpwe{
 
 			virtual void present(const Camera *cam) noexcept = 0;
 
-			RenderGroup *createGroup(const Shape *shape);
+			RenderGroup *createGroup(std::uint32_t numShapes, const Shape **shapes);
+			RenderGroup *createGroup(const Shape *shape){ return createGroup(1, &shape); }
 			bool destroyGroup(RenderGroup *group);
 
 			RenderProgram *createProgram(RenderProgram::Kind kind, std::string_view src);
@@ -86,7 +87,7 @@ namespace gpwe{
 			bool destroyFramebuffer(RenderFramebuffer *fb);
 
 		protected:
-			virtual std::unique_ptr<RenderGroup> doCreateGroup(const Shape *shape) = 0;
+			virtual std::unique_ptr<RenderGroup> doCreateGroup(std::uint32_t numShapes, const Shape **shapes) = 0;
 			virtual std::unique_ptr<RenderProgram> doCreateProgram(RenderProgram::Kind kind, std::string_view src) = 0;
 			virtual std::unique_ptr<RenderPipeline> doCreatePipeline(const std::vector<RenderProgram*> &progs) = 0;
 			virtual std::unique_ptr<RenderFramebuffer> doCreateFramebuffer(std::uint16_t w, std::uint16_t h, const std::vector<Texture::Kind> &attachments) = 0;

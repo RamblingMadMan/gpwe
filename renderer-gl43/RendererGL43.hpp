@@ -1,5 +1,5 @@
-﻿#ifndef GPWE_CLIENT_RENDERERGL43_HPP
-#define GPWE_CLIENT_RENDERERGL43_HPP 1
+﻿#ifndef GPWE_RENDERER_GL43_HPP
+#define GPWE_RENDERER_GL43_HPP 1
 
 #include "gpwe/Renderer.hpp"
 
@@ -8,7 +8,7 @@
 namespace gpwe{
 	class RenderGroupGL43: public RenderGroup{
 		public:
-			explicit RenderGroupGL43(const Shape *shape, std::uint32_t n = 1);
+			explicit RenderGroupGL43(std::uint32_t numShapes, const Shape **shapes, std::uint32_t n = 1);
 			~RenderGroupGL43();
 
 			void draw() const noexcept override;
@@ -20,6 +20,7 @@ namespace gpwe{
 			void *dataPtr(std::uint32_t idx) override;
 
 		private:
+			std::uint32_t m_numShapes;
 			std::uint32_t m_vao;
 			std::uint32_t m_bufs[5];
 			void *m_cmdPtr;
@@ -90,7 +91,7 @@ namespace gpwe{
 			void present(const Camera *cam) noexcept override;
 
 		protected:
-			std::unique_ptr<RenderGroup> doCreateGroup(const Shape *shape) override;
+			std::unique_ptr<RenderGroup> doCreateGroup(std::uint32_t numShapes, const Shape **shapes) override;
 
 			std::unique_ptr<RenderProgram> doCreateProgram(RenderProgram::Kind kind, std::string_view src) override;
 
@@ -110,4 +111,4 @@ namespace gpwe{
 extern "C"
 std::unique_ptr<gpwe::Renderer> gpweCreateRenderer_gl43(gpwe::GLGetProcFn getProcFn);
 
-#endif // !GPWE_CLIENT_RENDERERGL_HPP
+#endif // !GPWE_RENDERER_GL43_HPP

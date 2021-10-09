@@ -73,7 +73,7 @@ inline bool eraseUnique(plf::list<std::unique_ptr<T>> &xs, T *ptr){
 	return false;
 }
 
-RenderGroup *Renderer::createGroup(const Shape *shape){ return insertUnique(m_groups, doCreateGroup(shape)); }
+RenderGroup *Renderer::createGroup(std::uint32_t numShapes, const Shape **shapes){ return insertUnique(m_groups, doCreateGroup(numShapes, shapes)); }
 bool Renderer::destroyGroup(RenderGroup *group){ return eraseUnique(m_groups, group); }
 
 RenderProgram *Renderer::createProgram(RenderProgram::Kind kind, std::string_view src){ return insertUnique(m_progs, doCreateProgram(kind, src)); }

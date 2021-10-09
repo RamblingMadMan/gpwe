@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14.0 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-project(gpwe VERSION 0.0.0 LANGUAGES CXX)
+project(gpwe VERSION 0.0.0 LANGUAGES C CXX)
 
 execute_process(
 	COMMAND git rev-parse --short HEAD
@@ -22,6 +22,7 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/Camera.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Shape.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Texture.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Model.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Renderer.hpp
 )
 
@@ -36,6 +37,17 @@ target_include_directories(plf-list INTERFACE deps/plf_list)
 add_subdirectory(deps/glm EXCLUDE_FROM_ALL)
 add_subdirectory(deps/fmt EXCLUDE_FROM_ALL)
 add_subdirectory(deps/glbinding EXCLUDE_FROM_ALL)
+
+function(addAssimp)
+	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+	set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "")
+	set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "")
+	set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "")
+	set(ASSIMP_INSTALL OFF CACHE BOOL "")
+	add_subdirectory(deps/assimp EXCLUDE_FROM_ALL)
+endfunction()
+
+addAssimp()
 
 # GPWE targets
 

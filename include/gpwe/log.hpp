@@ -42,11 +42,6 @@ namespace gpwe{
 	}
 
 	template<bool Print = true, typename Str, typename ... Args>
-	void logError(Str &&fmtStr, Args &&... args){
-		log<Print>(LogKind::error, std::forward<Str>(fmtStr), std::forward<Args>(args)...);
-	}
-
-	template<bool Print = true, typename Str, typename ... Args>
 	void logLn(LogKind kind, Str &&fmtStr, Args &&... args){
 		auto res = fmt::format(std::forward<Str>(fmtStr), std::forward<Args>(args)...);
 		log<Print>(kind, "{}\n", res);
@@ -55,6 +50,16 @@ namespace gpwe{
 	template<bool Print = true, typename Str, typename ... Args>
 	void logLn(Str &&fmtStr, Args &&... args){
 		logLn<Print>(LogKind::info, std::forward<Str>(fmtStr), std::forward<Args>(args)...);
+	}
+
+	template<bool Print = true, typename Str, typename ... Args>
+	void logError(Str &&fmtStr, Args &&... args){
+		log<Print>(LogKind::error, std::forward<Str>(fmtStr), std::forward<Args>(args)...);
+	}
+
+	template<bool Print = true, typename Str, typename ... Args>
+	void logErrorLn(Str &&fmtStr, Args &&... args){
+		logLn<Print>(LogKind::error, std::forward<Str>(fmtStr), std::forward<Args>(args)...);
 	}
 }
 
