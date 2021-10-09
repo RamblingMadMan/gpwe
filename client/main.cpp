@@ -1,7 +1,9 @@
-﻿#include <functional>
+﻿#include <ctime>
+#include <functional>
 #include <optional>
 #include <string_view>
 #include <memory>
+#include <chrono>
 
 #include "SDL.h"
 
@@ -10,10 +12,16 @@
 
 #include "FreeImage.h"
 
+#include "glm/glm.hpp"
+
 #include "gpwe/config.hpp"
 #include "gpwe/sys.hpp"
 #include "gpwe/log.hpp"
+#include "gpwe/Camera.hpp"
+#include "gpwe/Shape.hpp"
 #include "gpwe/Renderer.hpp"
+
+using namespace gpwe;
 
 using GLProc = void(*)();
 using GLGetProcFn = GLProc(*)(const char*);
@@ -21,8 +29,8 @@ using GLGetProcFn = GLProc(*)(const char*);
 SDL_Window *gpweWindow = nullptr;
 SDL_GLContext gpweContext = nullptr;
 void *gpweRendererLib = nullptr;
-std::unique_ptr<gpwe::Renderer> gpweRenderer;
-std::unique_ptr<gpwe::Renderer>(*gpweCreateRendererFn)(GLGetProcFn);
+std::unique_ptr<Renderer> gpweRenderer;
+std::unique_ptr<Renderer>(*gpweCreateRendererFn)(GLGetProcFn);
 
 static FT_Library gpweFtLib = nullptr;
 
@@ -102,6 +110,9 @@ void initVideo(){
 		[]() -> std::optional<std::string>{
 			constexpr std::pair<SDL_GLattr, int> ps[] = {
 				{ SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE },
+			#ifndef NDEBUG
+				{ SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG },
+			#endif
 				{ SDL_GL_CONTEXT_MAJOR_VERSION, 4 },
 				{ SDL_GL_CONTEXT_MINOR_VERSION, 3 },
 				{ SDL_GL_RED_SIZE, 8 },
@@ -117,6 +128,8 @@ void initVideo(){
 					return SDL_GetError();
 				}
 			};
+
+			SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
 
 			return std::nullopt;
 		},
@@ -220,8 +233,12 @@ void printVersions(){
 	gpwe::log("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
 }
 
-void gpwe::sys::init(){
-	gpwe::log("{:^{}}\n\n",
+void sys::init(){
+	auto launchT = std::chrono::system_clock::now();
+	std::time_t launchTime = std::chrono::system_clock::to_time_t(launchT);
+	logLn("{}", std::ctime(&launchTime));
+
+	log("{:^{}}\n\n",
 		fmt::format("-- General Purpose World Engine v{}.{}.{}/{} --", GPWE_VERSION_MAJOR, GPWE_VERSION_MINOR, GPWE_VERSION_PATCH, GPWE_VERSION_GIT),
 		30
 	);
@@ -232,27 +249,145 @@ void gpwe::sys::init(){
 	printVersions();
 }
 
-int gpwe::sys::exec(){
+int sys::exec(){
+	std::fflush(stdout);
+
 	logHeader("Starting Engine");
 
 	gpweRenderer = gpweCreateRendererFn([](const char *name) -> GLProc{ return (GLProc)SDL_GL_GetProcAddress(name); });
 
-	bool running = true;
+	Camera cam(90.f, 1280.f / 720.f);
+
+	cam.setPosition(glm::vec3(0.f, 0.f, -1.f));
+
+	shapes::Cube testShape(0.5f);
+	shapes::Square screenShape(2.f);
+
+	auto testGroup = gpweRenderer->createGroup(&testShape);
+	auto screenGroup = gpweRenderer->createGroup(&screenShape);
+
+	std::fflush(stdout);
 
 	SDL_Event ev;
 
+	using Clock = std::chrono::high_resolution_clock;
+	using Seconds = std::chrono::duration<float>;
+
+	auto startT = Clock::now();
+	auto loopT = startT;
+
+	bool running = true;
+	bool rotateCam = false;
+
+	float camSpeed = 0.1f;
+	glm::vec2 camRot;
+	glm::vec3 camMove = { 0.f, 0.f, 0.f };
+
 	while(running){
+		auto loopEndT = Clock::now();
+		auto loopDt = Seconds(loopEndT - loopT).count();
+
+		camRot = { 0.f, 0.f };
+
 		while(SDL_PollEvent(&ev)){
 			if(ev.type == SDL_QUIT){
 				running = false;
 				break;
 			}
+
+			switch(ev.type){
+				case SDL_QUIT:{
+					running = false;
+					break;
+				}
+
+				case SDL_MOUSEBUTTONDOWN:
+				case SDL_MOUSEBUTTONUP:{
+					bool pressed = ev.type == SDL_MOUSEBUTTONDOWN;
+					if(ev.button.button == SDL_BUTTON_LEFT){
+						rotateCam = pressed;
+					}
+
+					break;
+				}
+
+				case SDL_MOUSEMOTION:{
+					if(rotateCam){
+						camRot += glm::vec2(ev.motion.xrel, ev.motion.yrel);
+					}
+
+					break;
+				}
+
+				case SDL_KEYDOWN:
+				case SDL_KEYUP:{
+					if(ev.key.repeat) break;
+
+					bool pressed = ev.type == SDL_KEYDOWN;
+					switch(ev.key.keysym.sym){
+						case SDLK_w:
+						case SDLK_s:{
+							bool forward = ev.key.keysym.sym == SDLK_w;
+							const glm::vec3 dir = { 0.f, 0.f, forward ? 1.f : -1.f };
+							camMove += pressed ? dir : -dir;
+							break;
+						}
+
+						case SDLK_a:
+						case SDLK_d:{
+							bool right = ev.key.keysym.sym == SDLK_d;
+							const glm::vec3 dir = { right ? 1.f : -1.f, 0.f, 0.f };
+							camMove += pressed ? dir : -dir;
+							break;
+						}
+
+						case SDLK_SPACE:
+						case SDLK_LCTRL:{
+							bool up = ev.key.keysym.sym == SDLK_SPACE;
+							const glm::vec3 dir = { 0.f, up ? 1.f : -1.f, 0.f };
+							camMove += pressed ? dir : -dir;
+							break;
+						}
+
+						case SDLK_ESCAPE:{
+							running = false;
+							break;
+						}
+
+						default: break;
+					}
+
+					break;
+				}
+
+				default: break;
+			}
 		}
 
-		gpweRenderer->present();
+		auto moveForward = camMove.z * cam.forward();
+		auto moveRight = camMove.x * cam.right();
+		auto moveUp = glm::vec3(0.f, camMove.y, 0.f);
+
+		auto moveAmnt = moveForward + moveRight + moveUp;
+
+		if(glm::length(moveAmnt) > 0.f){
+			cam.translate(glm::normalize(moveAmnt) * loopDt * 0.001f);
+		}
+
+		if(rotateCam){
+			camRot *= camSpeed * loopDt;
+			cam.rotate(glm::radians(-camRot.x), glm::vec3(0.f, 1.f, 0.f));
+			cam.rotate(glm::radians(camRot.y), glm::vec3(1.f, 0.f, 0.f));
+		}
+
+		gpweRenderer->present(&cam);
 
 		SDL_GL_SwapWindow(gpweWindow);
 	}
+
+	// These aren't required
+	gpweRenderer->destroyGroup(testGroup);
+	gpweRenderer->destroyGroup(screenGroup);
 
 	// Must destroy renderer before context and window
 	gpweRenderer.reset();
@@ -261,7 +396,6 @@ int gpwe::sys::exec(){
 }
 
 int main(int argc, char *argv[]){
-	gpwe::sys::init();
-
-	return gpwe::sys::exec();
+	sys::init();
+	return sys::exec();
 }

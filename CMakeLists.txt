@@ -19,7 +19,9 @@ set(
 	${PROJECT_BINARY_DIR}/include/gpwe/config.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/log.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/sys.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Camera.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Shape.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Texture.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Renderer.hpp
 )
 
