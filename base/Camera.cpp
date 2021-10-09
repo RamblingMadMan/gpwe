@@ -32,8 +32,8 @@ glm::mat4 Camera::viewMat() const noexcept{
 
 		auto orientation = glm::normalize(pitch * yaw * roll);
 
-		m_forward = orientation * glm::vec3(0.f, 0.f, 1.f);
-		m_right = orientation * glm::vec3(-1.f, 0.f, 0.f);
+		m_forward = orientation * glm::vec3(0.f, 0.f, -1.f);
+		m_right = orientation * glm::vec3(1.f, 0.f, 0.f);
 		m_up = orientation * glm::vec3(0.f, -1.f, 0.f);
 
 		auto rot = glm::mat4_cast(glm::quatLookAtLH(m_forward, m_up));

@@ -365,7 +365,11 @@ int sys::exec(){
 		}
 
 		auto moveForward = camMove.z * cam.forward();
+		moveForward.y = 0.f;
+
 		auto moveRight = camMove.x * cam.right();
+		moveRight.y = 0.f;
+
 		auto moveUp = glm::vec3(0.f, camMove.y, 0.f);
 
 		auto moveAmnt = moveForward + moveRight + moveUp;

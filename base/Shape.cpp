@@ -56,8 +56,8 @@ shapes::Hexahedron::Hexahedron(
 		auto verts = m_verts + (i * 4);
 		auto norms = m_norms + (i * 4);
 
-		auto n0 = glm::triangleNormal(verts[0], verts[1], verts[2]);
-		auto n1 = glm::triangleNormal(verts[0], verts[2], verts[3]);
+		auto n0 = glm::triangleNormal(verts[0], verts[2], verts[1]);
+		auto n1 = glm::triangleNormal(verts[0], verts[3], verts[2]);
 		auto nAvg = glm::normalize((n0 + n1) / 2.f);
 
 		for(int j = 0; j < 4; j++){

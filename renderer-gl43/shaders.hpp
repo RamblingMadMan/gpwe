@@ -40,7 +40,7 @@ namespace gpwe{
 			"in vec2 uv_v;\n"
 
 			"void main(){\n"
-			"	float illum = max(norm_v.y, 0.1) + max(abs(norm_v.z), 0.1);"
+			"	float illum = max(norm_v.y, 0.1) + max(abs(norm_v.z * 0.5), 0.1);"
 			"	outAlbedo = vec4(vec3(illum), 1.0);\n"
 			"	outNormal = norm_v;\n"
 			"}\n"
