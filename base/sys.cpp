@@ -48,6 +48,8 @@ GPWEProc loadFunction(LibHandle lib, const char *name){
 #include "gpwe/Renderer.hpp"
 #include "gpwe/App.hpp"
 
+#include "physfs.h"
+
 #include "ft2build.h"
 #include FT_FREETYPE_H
 
@@ -84,13 +86,21 @@ std::atomic_bool gpweRunning = false;
 
 inline void logHeader(const std::string &str){ gpwe::log("{:^30}\n\n", str); }
 
-void initLibraries(){
+void initLibraries(int argc, char *argv[]){
 	std::string_view names[] = {
+		"PhysFS",
 		"Freetype",
 		"FreeImage"
 	};
 
 	std::function<std::optional<std::string>()> fns[] = {
+		[argv]() -> std::optional<std::string>{
+			if(!PHYSFS_init(argv[0])){
+				return PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
+			}
+
+			return std::nullopt;
+		},
 		[]() -> std::optional<std::string>{
 			auto err = FT_Init_FreeType(&gpweFtLib);
 			if(err != FT_Err_Ok){
@@ -142,12 +152,17 @@ void printVersions(){
 	FT_Library_Version(gpweFtLib, &ftMaj, &ftMin, &ftPatch);
 
 	std::string_view libs[] = {
+		"PhysFS",
 		"Freetype",
 		"FreeImage",
 		"Assimp"
 	};
 
+	PHYSFS_Version pfsVer;
+	PHYSFS_getLinkedVersion(&pfsVer);
+
 	std::string versions[] = {
+		fmt::format("{}.{}.{}", pfsVer.major, pfsVer.minor, pfsVer.patch),
 		fmt::format("{}.{}.{}", ftMaj, ftMin, ftPatch),
 		FreeImage_GetVersion(),
 		fmt::format("{}.{}.{}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch())
@@ -167,7 +182,10 @@ void printVersions(){
 	gpwe::log("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
 }
 
-void sys::init(input::Manager *inputManager_, std::uint16_t w, std::uint16_t h){
+void sys::init(
+	int argc, char *argv[],
+	input::Manager *inputManager_, std::uint16_t w, std::uint16_t h
+){
 	auto launchT = std::chrono::system_clock::now();
 	std::time_t launchTime = std::chrono::system_clock::to_time_t(launchT);
 	logLn("{}", std::ctime(&launchTime));
@@ -186,7 +204,7 @@ void sys::init(input::Manager *inputManager_, std::uint16_t w, std::uint16_t h){
 	gpweWidth = w;
 	gpweHeight = h;
 
-	initLibraries();
+	initLibraries(argc, argv);
 
 	auto libIter = fs::directory_iterator();
 

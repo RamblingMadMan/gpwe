@@ -13,3 +13,6 @@
 [submodule "deps/assimp"]
 	path = deps/assimp
 	url = https://github.com/assimp/assimp.git
+[submodule "deps/physfs"]
+	path = deps/physfs
+	url = https://github.com/icculus/physfs.git

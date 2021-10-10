@@ -27,6 +27,7 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/Version.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/sys.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/input.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/resource.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Octree.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Camera.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Shape.hpp
@@ -35,6 +36,7 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/Renderer.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/App.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/World.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Font.hpp
 )
 
 configure_file(${GPWE_INCLUDE_DIR}/gpwe/config.hpp.in include/gpwe/config.hpp)
@@ -45,20 +47,28 @@ add_library(plf-list INTERFACE)
 
 target_include_directories(plf-list INTERFACE deps/plf_list)
 
+set(PHYSFS_BUILD_TEST OFF CACHE BOOL "")
+set(PHYSFS_BUILD_DOCS OFF CACHE BOOL "")
+add_subdirectory(deps/physfs EXCLUDE_FROM_ALL)
+set_property(TARGET physfs-static PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+set(PHYSFS_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/deps/physfs/src)
+
+set(BUILD_STATIC_LIBS ON CACHE BOOL "")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+
 add_subdirectory(deps/glm EXCLUDE_FROM_ALL)
 add_subdirectory(deps/fmt EXCLUDE_FROM_ALL)
+
+set(OPTION_BUILD_TOOLS OFF CACHE BOOL "")
+set(OPTION_BUILD_EXAMPLES OFF CACHE BOOL "")
 add_subdirectory(deps/glbinding EXCLUDE_FROM_ALL)
 
-function(addAssimp)
-	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
-	set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "")
-	set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "")
-	set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "")
-	set(ASSIMP_INSTALL OFF CACHE BOOL "")
-	add_subdirectory(deps/assimp EXCLUDE_FROM_ALL)
-endfunction()
-
-addAssimp()
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "")
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "")
+set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "")
+set(ASSIMP_INSTALL OFF CACHE BOOL "")
+add_subdirectory(deps/assimp EXCLUDE_FROM_ALL)
 
 # GPWE targets
 

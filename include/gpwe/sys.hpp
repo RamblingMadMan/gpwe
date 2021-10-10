@@ -16,7 +16,12 @@ namespace gpwe::input{
 namespace gpwe::sys{
 	using PresentFn = std::function<void()>;
 
-	void init(input::Manager *inputManager_, std::uint16_t w, std::uint16_t h);
+	void init(
+		int argc, char *argv[],
+		input::Manager *inputManager_,
+		std::uint16_t w, std::uint16_t h
+	);
+
 	int exec(PresentFn presentFn, void *rendererArg);
 	void exit();
 

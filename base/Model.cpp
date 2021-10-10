@@ -10,6 +10,10 @@
 using namespace gpwe;
 
 Model::Model(const fs::path &filePath){
+	loadModel(filePath);
+}
+
+void Model::loadModel(const fs::path &filePath){
 	Assimp::Importer importer;
 
 	auto scene = importer.ReadFile(
@@ -24,6 +28,7 @@ Model::Model(const fs::path &filePath){
 		return;
 	}
 
+	m_meshes.clear();
 	m_meshes.reserve(scene->mNumMeshes);
 
 	for(std::uint32_t i = 0; i < scene->mNumMeshes; i++){

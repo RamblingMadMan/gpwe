@@ -10,6 +10,8 @@ namespace gpwe{
 
 	class Model{
 		public:
+			Model(){}
+
 			explicit Model(const fs::path &filePath);
 
 			const Shape *shape(std::uint32_t idx) const noexcept{
@@ -21,6 +23,8 @@ namespace gpwe{
 			}
 
 			std::vector<const Shape*> shapes() const;
+
+			void loadModel(const fs::path &filePath);
 
 		private:
 			std::vector<shapes::TriangleMesh> m_meshes;

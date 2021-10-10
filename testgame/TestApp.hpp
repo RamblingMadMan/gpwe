@@ -3,6 +3,7 @@
 
 #include "gpwe/Camera.hpp"
 #include "gpwe/Renderer.hpp"
+#include "gpwe/Model.hpp"
 #include "gpwe/App.hpp"
 
 class TestApp: public gpwe::App{
@@ -17,12 +18,14 @@ class TestApp: public gpwe::App{
 		void update(float dt) override;
 
 	private:
-		gpwe::RenderGroup *cubeGroup;
+		gpwe::RenderGroup *cubeGroup, *guyGroup;
 		bool rotateCam = false;
 		glm::vec3 rot = { 0.f, 0.f, 0.f }, movement = { 0.f, 0.f, 0.f };
 
 		float rotSpeed = 0.1f;
 		float moveSpeed = 0.0075;
+
+		gpwe::Model guyMdl;
 };
 
 #endif // !TESTGAME_TESTAPP_HPP

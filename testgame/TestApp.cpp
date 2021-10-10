@@ -13,8 +13,13 @@ GPWE_APP(TestApp, "TESTGAME", "RamblingMad", 0, 0, 0)
 TestApp::TestApp(){
 	sys::camera()->translate({ 0.f, 0.f, -2.f });
 
+	guyMdl.loadModel("./Assets/Models/SphereGuy.fbx");
 	shapes::Cube cube(2.f);
+
 	cubeGroup = sys::renderer()->createGroup(&cube);
+	cubeGroup->setNumInstances(0);
+
+	guyGroup = sys::renderer()->createGroup(guyMdl.shape(0));
 
 	auto inputManager = sys::inputManager();
 
