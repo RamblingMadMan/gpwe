@@ -2,8 +2,10 @@
 
 <p><br /></p>
 
+<p align="center">
 GPWE is an engine designed primarily for creating games and 3D environments, but can be used for worlds of any kind.
-
+</p>
+  
 <p><br /></p>
 
 <h2 align="center">Features<br /></h2>
@@ -41,11 +43,11 @@ GPWE is an engine designed primarily for creating games and 3D environments, but
 
 <p><br /></p>
 
-### Installing system dependencies:
+<h3 align="center">Installing system dependencies</h3>
 
 <p><br /></p>
 
-#### Ubuntu
+<h4 align="center">Ubuntu</h4>
 
 ```bash
 sudo apt install libsdl2-dev libfreetype-dev libfreeimage-dev
@@ -69,8 +71,10 @@ cmake --build . -- -j$(nproc)
 
 <p><br /></p>
 
-There isn't much to show off yet, so here's a cube with fake lighting:
-
 <p align="center">
-<img src="res/gpwe1.png" width="512" alt="Screenshot of a cube" />
+There isn't much to show off yet, so here's a cube with fake lighting.
 </p>
+  
+<div align="center">
+<img align="center" src="res/gpwe1.png" width="512" alt="Screenshot of a cube" />
+</div>
