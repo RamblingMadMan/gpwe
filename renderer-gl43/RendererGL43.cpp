@@ -29,10 +29,7 @@ inline Iter binary_find(Iter begin, Iter end, T val){
 	}
 }
 
-extern "C"
-std::unique_ptr<gpwe::Renderer> gpweCreateRenderer_gl43(gpwe::GLGetProcFn getProcFn){
-	return std::make_unique<gpwe::RendererGL43>(getProcFn);
-}
+GPWE_RENDERER(gpwe::RendererGL43, "OpenGL 4.3", "RamblingMad", 0, 0, 0)
 
 struct DrawElementsIndirectCommand{
 	GLuint count;
@@ -164,9 +161,9 @@ void gpweGLMessageCB(
 	);
 }
 
-RendererGL43::RendererGL43(GLGetProcFn getProcFn){
+RendererGL43::RendererGL43(void *getProcFn){
 	log("{:<30}", "Initializing glbinding...");
-	glbinding::initialize(getProcFn);
+	glbinding::initialize(reinterpret_cast<GLGetProcFn>(getProcFn));
 	logLn("Done");
 
 #ifndef NDEBUG
@@ -182,7 +179,7 @@ RendererGL43::RendererGL43(GLGetProcFn getProcFn){
 			Texture::Kind::d24s8, // depth+stencil
 			Texture::Kind::rgba8, // diffuse/albedo
 			Texture::Kind::rgb16f, // normals
-			Texture::Kind::rgb16f // hdr/lighting
+			Texture::Kind::rgb10a2 // hdr/lighting
 		}
 	);
 	logLn("Done");

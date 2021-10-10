@@ -74,6 +74,7 @@ namespace gpwe{
 
 			"uniform sampler2D texAlbedo;\n"
 			"uniform sampler2D texNormal;\n"
+			"uniform sampler2D texLit;\n"
 
 			"in vec2 uv_v;\n"
 

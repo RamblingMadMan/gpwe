@@ -24,13 +24,17 @@ set(
 	GPWE_INCLUDES
 	${PROJECT_BINARY_DIR}/include/gpwe/config.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/log.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Version.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/sys.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/input.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Octree.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Camera.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Shape.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Texture.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Model.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Renderer.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/App.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/World.hpp
 )
 
 configure_file(${GPWE_INCLUDE_DIR}/gpwe/config.hpp.in include/gpwe/config.hpp)

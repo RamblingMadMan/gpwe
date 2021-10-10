@@ -85,7 +85,7 @@ namespace gpwe{
 
 	class RendererGL43: public Renderer{
 		public:
-			RendererGL43(GLGetProcFn getProcFn);
+			RendererGL43(void *getProcFn);
 			~RendererGL43();
 
 			void present(const Camera *cam) noexcept override;
@@ -107,8 +107,5 @@ namespace gpwe{
 			RenderPipeline *m_pipelineFullbright;
 	};
 }
-
-extern "C"
-std::unique_ptr<gpwe::Renderer> gpweCreateRenderer_gl43(gpwe::GLGetProcFn getProcFn);
 
 #endif // !GPWE_RENDERER_GL43_HPP

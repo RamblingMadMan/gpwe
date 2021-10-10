@@ -4,11 +4,9 @@
 #include <memory>
 #include <string_view>
 
-namespace gpwe{
-	struct Version{
-		std::uint16_t major, minor, patch;
-	};
+#include "gpwe/Version.hpp"
 
+namespace gpwe{
 	class App{
 		public:
 			virtual ~App() = default;
@@ -20,5 +18,11 @@ namespace gpwe{
 			virtual void update(float dt) = 0;
 	};
 }
+
+#define GPWE_APP(type, name, author, major, minor, patch)\
+extern "C" const char *gpweAppName(){ return name; }\
+extern "C" const char *gpweAppAuthor(){ return author; }\
+extern "C" gpwe::Version gpweAppVersion(){ return { major, minor, patch }; }\
+extern "C" std::unique_ptr<gpwe::App> gpweCreateApp(){ return std::make_unique<type>(); }
 
 #endif // !GPWE_APP_HPP

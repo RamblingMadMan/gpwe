@@ -41,6 +41,8 @@ namespace {
 			CASE_RGBA_TYPED(16);
 			CASE_RGBA_TYPED(32);
 
+			case Kind::rgb10a2: return GL_RGB10_A2;
+
 			case Kind::d16: return GL_DEPTH_COMPONENT16;
 			case Kind::d32: return GL_DEPTH_COMPONENT32;
 			case Kind::d32f: return GL_DEPTH_COMPONENT32F;

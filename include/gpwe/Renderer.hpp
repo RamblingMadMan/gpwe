@@ -7,6 +7,7 @@
 
 #include "plf_list.h"
 
+#include "Version.hpp"
 #include "Texture.hpp"
 
 namespace gpwe{
@@ -98,5 +99,11 @@ namespace gpwe{
 			plf::list<std::unique_ptr<RenderFramebuffer>> m_fbs;
 	};
 }
+
+#define GPWE_RENDERER(type, name, author, major, minor, patch)\
+extern "C" const char *gpweRendererName(){ return name; }\
+extern "C" const char *gpweRendererAuthor(){ return author; }\
+extern "C" gpwe::Version gpweRendererVersion(){ return { major, minor, patch }; }\
+extern "C" std::unique_ptr<gpwe::Renderer> gpweCreateRenderer(void *param){ return std::make_unique<type>(param); }
 
 #endif // !GPWE_RENDERER_HPP

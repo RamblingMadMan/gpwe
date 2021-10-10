@@ -17,6 +17,9 @@ namespace gpwe{
 				r32i, rg32i, rgb32i, rgba32i,
 				r32f, rg32f, rgb32f, rgba32f,
 
+				// Special formats
+				rgb10a2,
+
 				// Depth(+Stencil) formats
 				d16,
 				d32, d32f,
