@@ -1,4 +1,4 @@
-# GPWE - General Purpose World Engine
+<h1 align="center">GPWE<br />General Purpose World Engine</h1>
 
 <p><br /></p>
 
@@ -6,9 +6,11 @@ GPWE is an engine designed primarily for creating games and 3D environments, but
 
 <p><br /></p>
 
-## Features
+<h2 align="center">Features<br /></h2>
 
 <p><br /></p>
+
+<div align="center">
 
 | Feature | Status |
 |:--------|:------:|
@@ -16,11 +18,15 @@ GPWE is an engine designed primarily for creating games and 3D environments, but
 | Real-time ray tracing | ❌ |
 | Bullet physics integration | ❌ |
 
+</div>
+  
 <p><br /></p>
 
-## Dependencies
-
+<h2 align="center">Dependencies</h2>
+  
 <p><br /></p>
+
+<div align="center">
 
 | Dependency | Included |
 |:-----------|:--------:|
@@ -31,9 +37,11 @@ GPWE is an engine designed primarily for creating games and 3D environments, but
 | glm        | ✅ |
 | glbinding  | ✅ |
 
+</div>
+
 <p><br /></p>
 
-### Installing system dependencies
+### Installing system dependencies:
 
 <p><br /></p>
 
@@ -44,7 +52,9 @@ sudo apt install libsdl2-dev libfreetype-dev libfreeimage-dev
 ```
 <p><br /></p>
 
-## Building
+<h2 align="center">Building</h2>
+
+<p><br /></p>
 
 ```bash
 mkdir build
@@ -55,7 +65,7 @@ cmake --build . -- -j$(nproc)
 
 <p><br /></p>
 
-## Screenshots
+<h2 align="center">Screenshots</h2>
 
 <p><br /></p>
 
