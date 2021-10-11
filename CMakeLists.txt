@@ -10,6 +10,9 @@ else()
 	set(GPWE_MASTER_PROJECT FALSE)
 endif()
 
+option(GPWE_BUILD_EDITOR "Build the GPWE editor" ${GPWE_MASTER_PROJECT})
+option(GPWE_BUILD_CLIENT "Build the GPWE client" ${GPWE_MASTER_PROJECT})
+
 execute_process(
 	COMMAND git rev-parse --short HEAD
 	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}

@@ -150,5 +150,27 @@ shapes::TriangleMesh HeightMapShape::generateMesh(float scale) const{
 					   ? m_h * scale
 					   : m_h * scale * aspect;
 
+	std::uint32_t numPoints = m_w * m_h;
+	std::uint32_t numIndices = ((m_w-1) * (m_h-1)) * 2 * 3;
+	Vector<glm::vec3> verts, norms;
+	Vector<glm::vec2> uvs;
+	Vector<std::uint32_t> indices;
+
+	verts.reserve(numPoints);
+	norms.reserve(numPoints);
+	uvs.reserve(numPoints);
+	indices.reserve(numIndices);
+
+	const float yStep = 1.f / m_h;
+	const float xStep = 1.f / m_w;
+
+	for(std::uint16_t y = 0; y < m_h; y++){
+		const float yOff = (y * yStep) - 0.5f;
+		for(std::uint16_t x = 0; x < m_w; x++){
+			const float xOff = (x * xStep) - 0.5f;
+			verts.emplace_back(xOff, 0.f, yOff);
+		}
+	}
+
 
 }
