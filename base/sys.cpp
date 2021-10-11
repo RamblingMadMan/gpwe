@@ -280,7 +280,7 @@ void sys::init(
 	}
 
 	// Load app
-	gpweAppLib = loadLibrary(appPaths[0].c_str());
+	gpweAppLib = loadLibrary(!appPaths.empty() ? appPaths[0].c_str() : nullptr);
 	if(!gpweAppLib){
 		logErrorLn("{}", loadLibraryError());
 		std::exit(3);
@@ -289,7 +289,7 @@ void sys::init(
 	std::atexit([]{ closeLibrary(gpweAppLib); });
 
 	// Load renderer
-	gpweRendererLib = loadLibrary(rendererPaths[0].c_str());
+	gpweRendererLib = loadLibrary(!rendererPaths.empty() ? rendererPaths[0].c_str() : nullptr);
 	if(!gpweRendererLib){
 		logErrorLn("{}", loadLibraryError());
 		std::exit(3);
