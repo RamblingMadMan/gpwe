@@ -3,12 +3,10 @@
 
 #include "gpwe/Renderer.hpp"
 
-#include "plf_list.h"
-
 namespace gpwe{
 	class RenderGroupGL43: public RenderGroup{
 		public:
-			explicit RenderGroupGL43(std::uint32_t numShapes, const Shape **shapes, std::uint32_t n = 1);
+			explicit RenderGroupGL43(std::uint32_t numShapes, const VertexShape **shapes, std::uint32_t n = 1);
 			~RenderGroupGL43();
 
 			void draw() const noexcept override;
@@ -46,7 +44,7 @@ namespace gpwe{
 
 	class RenderPipelineGL43: public RenderPipeline{
 		public:
-			RenderPipelineGL43(const std::vector<RenderProgramGL43*> &progs);
+			RenderPipelineGL43(const Vector<RenderProgramGL43*> &progs);
 			~RenderPipelineGL43();
 
 			void use() const noexcept override;
@@ -55,12 +53,12 @@ namespace gpwe{
 
 		private:
 			std::uint32_t m_handle;
-			std::vector<RenderProgramGL43*> m_progs;
+			Vector<RenderProgramGL43*> m_progs;
 	};
 
 	class RenderFramebufferGL43: public RenderFramebuffer{
 		public:
-			RenderFramebufferGL43(std::uint16_t w, std::uint16_t h, const std::vector<Texture::Kind> &attachments);
+			RenderFramebufferGL43(std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments);
 			~RenderFramebufferGL43();
 
 			void use(Mode mode) noexcept override;
@@ -76,8 +74,8 @@ namespace gpwe{
 		private:
 			std::uint16_t m_w, m_h;
 			std::uint32_t m_handle;
-			std::vector<std::uint32_t> m_texs;
-			std::vector<Texture::Kind> m_attachments;
+			Vector<std::uint32_t> m_texs;
+			Vector<Texture::Kind> m_attachments;
 	};
 
 	using GLProc = void(*)();
@@ -91,14 +89,14 @@ namespace gpwe{
 			void present(const Camera *cam) noexcept override;
 
 		protected:
-			std::unique_ptr<RenderGroup> doCreateGroup(std::uint32_t numShapes, const Shape **shapes) override;
+			UniquePtr<RenderGroup> doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes) override;
 
-			std::unique_ptr<RenderProgram> doCreateProgram(RenderProgram::Kind kind, std::string_view src) override;
+			UniquePtr<RenderProgram> doCreateProgram(RenderProgram::Kind kind, std::string_view src) override;
 
-			std::unique_ptr<RenderPipeline> doCreatePipeline(const std::vector<RenderProgram*> &progs) override;
+			UniquePtr<RenderPipeline> doCreatePipeline(const Vector<RenderProgram*> &progs) override;
 
-			std::unique_ptr<RenderFramebuffer> doCreateFramebuffer(
-				std::uint16_t w, std::uint16_t h, const std::vector<Texture::Kind> &attachments
+			UniquePtr<RenderFramebuffer> doCreateFramebuffer(
+				std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments
 			) override;
 
 		private:

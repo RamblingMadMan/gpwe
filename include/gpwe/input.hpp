@@ -4,14 +4,14 @@
 #include <cstdint>
 #include <map>
 
-#include "plf_list.h"
+#include "List.hpp"
 
 namespace gpwe::input{
 	class System{
 		public:
 			using ExitEventFn = std::function<void()>;
 
-			using ExitEventIter = plf::list<ExitEventFn>::iterator;
+			using ExitEventIter = List<ExitEventFn>::iterator;
 
 			template<typename Fn>
 			ExitEventIter onExitEvent(Fn &&fn){
@@ -27,7 +27,7 @@ namespace gpwe::input{
 		private:
 			System() noexcept{}
 
-			plf::list<ExitEventFn> m_exitFns;
+			List<ExitEventFn> m_exitFns;
 
 			friend class Manager;
 	};
@@ -61,7 +61,7 @@ namespace gpwe::input{
 		public:
 			using KeyEventFn = std::function<void(Key, bool)>;
 
-			using KeyEventIter = plf::list<KeyEventFn>::iterator;
+			using KeyEventIter = List<KeyEventFn>::iterator;
 
 			explicit Keyboard(std::uint32_t id_) noexcept
 				: m_id(id_){}
@@ -79,7 +79,7 @@ namespace gpwe::input{
 
 		private:
 			std::uint32_t m_id;
-			plf::list<KeyEventFn> m_keyFns;
+			List<KeyEventFn> m_keyFns;
 	};
 
 	enum class MouseButton: std::uint8_t{
@@ -95,8 +95,8 @@ namespace gpwe::input{
 			using ButtonEventFn = std::function<void(MouseButton, bool)>;
 			using MoveEventFn = std::function<void(std::int32_t, std::int32_t)>;
 
-			using ButtonEventIter = plf::list<ButtonEventFn>::iterator;
-			using MoveEventIter = plf::list<MoveEventFn>::iterator;
+			using ButtonEventIter = List<ButtonEventFn>::iterator;
+			using MoveEventIter = List<MoveEventFn>::iterator;
 
 			explicit Mouse(std::uint32_t id_) noexcept
 				: m_id(id_){}
@@ -125,8 +125,8 @@ namespace gpwe::input{
 
 		private:
 			std::uint32_t m_id;
-			plf::list<ButtonEventFn> m_btnFns;
-			plf::list<MoveEventFn> m_moveFns;
+			List<ButtonEventFn> m_btnFns;
+			List<MoveEventFn> m_moveFns;
 	};
 
 	class Gamepad{
@@ -144,7 +144,7 @@ namespace gpwe::input{
 		public:
 			using PumpEventFn = std::function<void()>;
 
-			using PumpEventIt = plf::list<PumpEventFn>::iterator;
+			using PumpEventIt = List<PumpEventFn>::iterator;
 
 			virtual ~Manager() = default;
 
@@ -187,7 +187,7 @@ namespace gpwe::input{
 			virtual void doPumpEvents() = 0;
 
 			template<typename T>
-			static T *getFromList(plf::list<T> &l, std::uint32_t idx){
+			static T *getFromList(List<T> &l, std::uint32_t idx){
 				if(idx >= l.size()) return nullptr;
 
 				auto res = l.begin();
@@ -200,11 +200,11 @@ namespace gpwe::input{
 			}
 
 			System m_sys;
-			plf::list<Keyboard> m_kbs;
-			plf::list<Mouse> m_mice;
-			plf::list<Gamepad> m_gamepads;
+			List<Keyboard> m_kbs;
+			List<Mouse> m_mice;
+			List<Gamepad> m_gamepads;
 
-			plf::list<PumpEventFn> m_pumpFns;
+			List<PumpEventFn> m_pumpFns;
 	};
 }
 

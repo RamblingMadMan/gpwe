@@ -39,13 +39,13 @@ struct DrawElementsIndirectCommand{
 	GLuint baseInstance;
 };
 
-RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const Shape **shapes, std::uint32_t n)
+RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const VertexShape **shapes, std::uint32_t n)
 	: m_numShapes(numShapes)
 {
 	glCreateVertexArrays(1, &m_vao);
 	glCreateBuffers(std::size(m_bufs), m_bufs);
 
-	std::vector<DrawElementsIndirectCommand> cmds;
+	Vector<DrawElementsIndirectCommand> cmds;
 	cmds.resize(numShapes);
 
 	std::uint32_t totalNumPoints = 0, totalNumIndices = 0;
@@ -64,9 +64,9 @@ RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const Shape **shapes, 
 		totalNumIndices += shape->numIndices();
 	}
 
-	std::vector<glm::vec3> verts, norms;
-	std::vector<glm::vec2> uvs;
-	std::vector<std::uint32_t> indices;
+	Vector<glm::vec3> verts, norms;
+	Vector<glm::vec2> uvs;
+	Vector<std::uint32_t> indices;
 
 	verts.reserve(totalNumPoints);
 	norms.reserve(totalNumPoints);
@@ -259,16 +259,16 @@ void RendererGL43::present(const Camera *cam) noexcept{
 	glBlitFramebuffer(0, 0, w, h, 0, 0, oldW, oldH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-std::unique_ptr<RenderGroup> RendererGL43::doCreateGroup(std::uint32_t numShapes, const Shape **shapes){
-	return std::make_unique<RenderGroupGL43>(numShapes, shapes);
+UniquePtr<RenderGroup> RendererGL43::doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes){
+	return makeUnique<RenderGroupGL43>(numShapes, shapes);
 }
 
-std::unique_ptr<RenderProgram> RendererGL43::doCreateProgram(RenderProgram::Kind kind, std::string_view src){
-	return std::make_unique<RenderProgramGL43>(kind, src);
+UniquePtr<RenderProgram> RendererGL43::doCreateProgram(RenderProgram::Kind kind, std::string_view src){
+	return makeUnique<RenderProgramGL43>(kind, src);
 }
 
-std::unique_ptr<RenderPipeline> RendererGL43::doCreatePipeline(const std::vector<RenderProgram*> &progs){
-	std::vector<RenderProgramGL43*> glProgs;
+UniquePtr<RenderPipeline> RendererGL43::doCreatePipeline(const Vector<RenderProgram*> &progs){
+	Vector<RenderProgramGL43*> glProgs;
 	glProgs.reserve(progs.size());
 
 	for(auto prog : progs){
@@ -281,11 +281,11 @@ std::unique_ptr<RenderPipeline> RendererGL43::doCreatePipeline(const std::vector
 		glProgs.emplace_back(glProg);
 	}
 
-	return std::make_unique<RenderPipelineGL43>(glProgs);
+	return makeUnique<RenderPipelineGL43>(glProgs);
 }
 
-std::unique_ptr<RenderFramebuffer> RendererGL43::doCreateFramebuffer(
-	std::uint16_t w, std::uint16_t h, const std::vector<Texture::Kind> &attachments
+UniquePtr<RenderFramebuffer> RendererGL43::doCreateFramebuffer(
+	std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments
 ){
-	return std::make_unique<RenderFramebufferGL43>(w, h, attachments);
+	return makeUnique<RenderFramebufferGL43>(w, h, attachments);
 }

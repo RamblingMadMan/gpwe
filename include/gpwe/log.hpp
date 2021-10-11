@@ -14,8 +14,8 @@ namespace gpwe{
 		count
 	};
 
-	template<bool Print = true, typename Str, typename ... Args>
-	void log(LogKind kind, Str &&fmtStr, Args &&... args){
+	template<bool Print = true, typename String, typename ... Args>
+	void log(LogKind kind, String &&fmtStr, Args &&... args){
 		std::FILE *fd = stdout;
 
 		switch(kind){
@@ -27,7 +27,7 @@ namespace gpwe{
 			default: break;
 		}
 
-		auto str = fmt::format(std::forward<Str>(fmtStr), std::forward<Args>(args)...);
+		auto str = fmt::format(std::forward<String>(fmtStr), std::forward<Args>(args)...);
 
 		if constexpr(Print){
 			fmt::print(fd, "{}", str);
@@ -36,30 +36,30 @@ namespace gpwe{
 		// TODO: log to buffer/file
 	}
 
-	template<bool Print = true, typename Str, typename ... Args>
-	void log(Str &&fmtStr, Args &&... args){
-		log<Print>(LogKind::info, std::forward<Str>(fmtStr), std::forward<Args>(args)...);
+	template<bool Print = true, typename String, typename ... Args>
+	void log(String &&fmtStr, Args &&... args){
+		log<Print>(LogKind::info, std::forward<String>(fmtStr), std::forward<Args>(args)...);
 	}
 
-	template<bool Print = true, typename Str, typename ... Args>
-	void logLn(LogKind kind, Str &&fmtStr, Args &&... args){
-		auto res = fmt::format(std::forward<Str>(fmtStr), std::forward<Args>(args)...);
+	template<bool Print = true, typename String, typename ... Args>
+	void logLn(LogKind kind, String &&fmtStr, Args &&... args){
+		auto res = fmt::format(std::forward<String>(fmtStr), std::forward<Args>(args)...);
 		log<Print>(kind, "{}\n", res);
 	}
 
-	template<bool Print = true, typename Str, typename ... Args>
-	void logLn(Str &&fmtStr, Args &&... args){
-		logLn<Print>(LogKind::info, std::forward<Str>(fmtStr), std::forward<Args>(args)...);
+	template<bool Print = true, typename String, typename ... Args>
+	void logLn(String &&fmtStr, Args &&... args){
+		logLn<Print>(LogKind::info, std::forward<String>(fmtStr), std::forward<Args>(args)...);
 	}
 
-	template<bool Print = true, typename Str, typename ... Args>
-	void logError(Str &&fmtStr, Args &&... args){
-		log<Print>(LogKind::error, std::forward<Str>(fmtStr), std::forward<Args>(args)...);
+	template<bool Print = true, typename String, typename ... Args>
+	void logError(String &&fmtStr, Args &&... args){
+		log<Print>(LogKind::error, std::forward<String>(fmtStr), std::forward<Args>(args)...);
 	}
 
-	template<bool Print = true, typename Str, typename ... Args>
-	void logErrorLn(Str &&fmtStr, Args &&... args){
-		logLn<Print>(LogKind::error, std::forward<Str>(fmtStr), std::forward<Args>(args)...);
+	template<bool Print = true, typename String, typename ... Args>
+	void logErrorLn(String &&fmtStr, Args &&... args){
+		logLn<Print>(LogKind::error, std::forward<String>(fmtStr), std::forward<Args>(args)...);
 	}
 }
 

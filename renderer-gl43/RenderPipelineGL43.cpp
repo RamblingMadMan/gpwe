@@ -18,7 +18,7 @@ namespace {
 	}
 }
 
-RenderPipelineGL43::RenderPipelineGL43(const std::vector<RenderProgramGL43*> &progs)
+RenderPipelineGL43::RenderPipelineGL43(const Vector<RenderProgramGL43*> &progs)
 	: m_progs(progs)
 {
 	glCreateProgramPipelines(1, &m_handle);

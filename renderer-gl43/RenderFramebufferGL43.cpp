@@ -73,7 +73,7 @@ namespace {
 }
 
 RenderFramebufferGL43::RenderFramebufferGL43(
-	std::uint16_t w, std::uint16_t h, const std::vector<Texture::Kind> &attachments
+	std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments
 )
 	: m_w(w), m_h(h), m_attachments(attachments)
 {

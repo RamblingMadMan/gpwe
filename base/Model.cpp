@@ -39,8 +39,8 @@ void Model::loadModel(const fs::path &filePath){
 			continue;
 		}
 
-		std::vector<glm::vec3> verts, norms;
-		std::vector<glm::vec2> uvs;
+		Vector<glm::vec3> verts, norms;
+		Vector<glm::vec2> uvs;
 
 		verts.reserve(mesh->mNumVertices);
 		norms.reserve(mesh->mNumVertices);
@@ -55,7 +55,7 @@ void Model::loadModel(const fs::path &filePath){
 			uvs.emplace_back(uv->x, uv->y);
 		}
 
-		std::vector<std::uint32_t> indices;
+		Vector<std::uint32_t> indices;
 
 		indices.reserve(mesh->mNumFaces * 3);
 
@@ -70,8 +70,8 @@ void Model::loadModel(const fs::path &filePath){
 	}
 }
 
-std::vector<const Shape*> Model::shapes() const{
-	std::vector<const Shape*> ret;
+Vector<const VertexShape*> Model::shapes() const{
+	Vector<const VertexShape*> ret;
 	ret.reserve(m_meshes.size());
 	std::transform(
 		m_meshes.begin(), m_meshes.end(),

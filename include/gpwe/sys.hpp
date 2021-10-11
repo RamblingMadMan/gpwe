@@ -25,6 +25,9 @@ namespace gpwe::sys{
 	int exec(PresentFn presentFn, void *rendererArg);
 	void exit();
 
+	void *alloc(std::size_t n);
+	void free(void *ptr);
+
 	//std::uint32_t numRenderers();
 
 	Camera *camera();

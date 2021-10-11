@@ -3,15 +3,29 @@
 
 #include <cstdint>
 #include <array>
-#include <vector>
 
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
+
+#include "Vector.hpp"
 
 namespace gpwe{
 	class Shape{
 		public:
 			enum class Kind{
+				vertex, heightmap,
+
+				count
+			};
+
+			virtual ~Shape() = default;
+
+			virtual Kind kind() const noexcept = 0;
+	};
+
+	class VertexShape: public Shape{
+		public:
+			enum class Mode{
 				points,
 				lines,
 				tris,
@@ -21,9 +35,9 @@ namespace gpwe{
 				count
 			};
 
-			virtual ~Shape() = default;
+			Kind kind() const noexcept override{ return Kind::vertex; }
 
-			virtual Kind kind() const noexcept = 0;
+			virtual Mode mode() const noexcept = 0;
 
 			virtual std::uint32_t numPoints() const noexcept = 0;
 			virtual const glm::vec3 *vertices() const noexcept = 0;
@@ -35,14 +49,14 @@ namespace gpwe{
 	};
 
 	namespace shapes{
-		class Quad: public Shape{
+		class Quad: public VertexShape{
 			public:
 				Quad(
 					const glm::vec3 &tl, const glm::vec3 &tr,
 					const glm::vec3 &bl, const glm::vec3 &br
 				);
 
-				Kind kind() const noexcept override{ return Kind::tris; }
+				Mode mode() const noexcept override{ return Mode::tris; }
 
 				std::uint32_t numPoints() const noexcept override{ return 4; }
 
@@ -81,7 +95,7 @@ namespace gpwe{
 				Square(float d): Rect(d, d){}
 		};
 
-		class Hexahedron: public Shape{
+		class Hexahedron: public VertexShape{
 			public:
 				Hexahedron(
 					// front
@@ -93,7 +107,7 @@ namespace gpwe{
 					const glm::vec3 &bbl, const glm::vec3 &bbr
 				);
 
-				Kind kind() const noexcept override{ return Kind::tris; }
+				Mode mode() const noexcept override{ return Mode::tris; }
 
 				std::uint32_t numPoints() const noexcept override{ return std::size(m_verts); }
 
@@ -126,13 +140,13 @@ namespace gpwe{
 				Cube(float d): Cuboid(d, d, d){}
 		};
 
-		class TriangleMesh: public Shape{
+		class TriangleMesh: public VertexShape{
 			public:
 				TriangleMesh(
-					std::vector<glm::vec3> verts_,
-					std::vector<glm::vec3> norms_,
-					std::vector<glm::vec2> uvs_,
-					std::vector<std::uint32_t> indices_
+					Vector<glm::vec3> verts_,
+					Vector<glm::vec3> norms_,
+					Vector<glm::vec2> uvs_,
+					Vector<std::uint32_t> indices_
 				)
 					: m_verts(std::move(verts_))
 					, m_norms(std::move(norms_))
@@ -142,7 +156,7 @@ namespace gpwe{
 					assert(m_verts.size() == m_norms.size() && m_verts.size() == m_uvs.size());
 				}
 
-				Kind kind() const noexcept override{ return Kind::tris; }
+				Mode mode() const noexcept override{ return Mode::tris; }
 
 				std::uint32_t numPoints() const noexcept override{ return m_verts.size(); }
 
@@ -155,11 +169,29 @@ namespace gpwe{
 				const std::uint32_t *indices() const noexcept override{ return m_indices.data(); }
 
 			private:
-				std::vector<glm::vec3> m_verts, m_norms;
-				std::vector<glm::vec2> m_uvs;
-				std::vector<std::uint32_t> m_indices;
+				Vector<glm::vec3> m_verts, m_norms;
+				Vector<glm::vec2> m_uvs;
+				Vector<std::uint32_t> m_indices;
 		};
 	}
+
+	class HeightMapShape: public Shape{
+		public:
+			HeightMapShape(std::uint32_t w, std::uint32_t h, const float *vals) noexcept
+				: m_w(w), m_h(h), m_values(vals, vals + (w * h)){}
+
+			Kind kind() const noexcept override{ return Kind::heightmap; }
+
+			std::uint32_t width() const noexcept{ return m_w; }
+			std::uint32_t height() const noexcept{ return m_h; }
+			const float *values() const noexcept{ return m_values.data(); }
+
+			shapes::TriangleMesh generateMesh(float scale = 1.f) const;
+
+		private:
+			std::uint32_t m_w, m_h;
+			Vector<float> m_values;
+	};
 }
 
 #endif // !GPWE_SHAPE_HPP

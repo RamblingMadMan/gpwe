@@ -123,6 +123,7 @@ const std::uint32_t *shapes::Hexahedron::indices() const noexcept{
 
 	return arr;
 }
+
 shapes::Cuboid::Cuboid(HalfT, float hw, float hh, float hd)
 	: Hexahedron(
 			// points in code visual order
@@ -135,3 +136,19 @@ shapes::Cuboid::Cuboid(HalfT, float hw, float hh, float hd)
 			{ -hw, -hh, hd }, {  hw, -hh, hd }
 		)
 {}
+
+shapes::TriangleMesh HeightMapShape::generateMesh(float scale) const{
+	const float aspect = m_w > m_h
+						 ? float(m_w) / float(m_h)
+						 : float(m_h) / float(m_w);
+
+	const float dimX = m_w > m_h
+					   ? m_w * scale * aspect
+					   : m_w * scale;
+
+	const float dimY = m_w > m_h
+					   ? m_h * scale
+					   : m_h * scale * aspect;
+
+
+}

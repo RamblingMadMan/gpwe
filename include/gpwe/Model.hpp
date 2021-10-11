@@ -3,6 +3,7 @@
 
 #include <filesystem>
 
+#include "Vector.hpp"
 #include "Shape.hpp"
 
 namespace gpwe{
@@ -14,7 +15,7 @@ namespace gpwe{
 
 			explicit Model(const fs::path &filePath);
 
-			const Shape *shape(std::uint32_t idx) const noexcept{
+			const VertexShape *shape(std::uint32_t idx) const noexcept{
 				if(idx >= m_meshes.size()){
 					return nullptr;
 				}
@@ -22,12 +23,12 @@ namespace gpwe{
 				return &m_meshes[idx];
 			}
 
-			std::vector<const Shape*> shapes() const;
+			Vector<const VertexShape*> shapes() const;
 
 			void loadModel(const fs::path &filePath);
 
 		private:
-			std::vector<shapes::TriangleMesh> m_meshes;
+			Vector<shapes::TriangleMesh> m_meshes;
 	};
 }
 

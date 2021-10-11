@@ -26,6 +26,10 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/log.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Version.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/sys.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Allocator.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Vector.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/List.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/String.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/input.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/resource.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Octree.hpp

@@ -2,17 +2,15 @@
 #define GPWE_RENDERER_HPP 1
 
 #include <cstdint>
-#include <vector>
-#include <string_view>
-
-#include "plf_list.h"
 
 #include "Version.hpp"
+#include "Vector.hpp"
+#include "List.hpp"
 #include "Texture.hpp"
 
 namespace gpwe{
 	class Camera;
-	class Shape;
+	class VertexShape;
 
 	class RenderGroup{
 		public:
@@ -74,29 +72,29 @@ namespace gpwe{
 
 			virtual void present(const Camera *cam) noexcept = 0;
 
-			RenderGroup *createGroup(std::uint32_t numShapes, const Shape **shapes);
-			RenderGroup *createGroup(const Shape *shape){ return createGroup(1, &shape); }
+			RenderGroup *createGroup(std::uint32_t numShapes, const VertexShape **shapes);
+			RenderGroup *createGroup(const VertexShape *shape){ return createGroup(1, &shape); }
 			bool destroyGroup(RenderGroup *group);
 
 			RenderProgram *createProgram(RenderProgram::Kind kind, std::string_view src);
 			bool destroyProgram(RenderProgram *program);
 
-			RenderPipeline *createPipeline(const std::vector<RenderProgram*> &programs);
+			RenderPipeline *createPipeline(const Vector<RenderProgram*> &programs);
 			bool destroyPipeline(RenderPipeline *pipeline);
 
-			RenderFramebuffer *createFramebuffer(std::uint16_t w, std::uint16_t h, const std::vector<Texture::Kind> &attachments);
+			RenderFramebuffer *createFramebuffer(std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments);
 			bool destroyFramebuffer(RenderFramebuffer *fb);
 
 		protected:
-			virtual std::unique_ptr<RenderGroup> doCreateGroup(std::uint32_t numShapes, const Shape **shapes) = 0;
-			virtual std::unique_ptr<RenderProgram> doCreateProgram(RenderProgram::Kind kind, std::string_view src) = 0;
-			virtual std::unique_ptr<RenderPipeline> doCreatePipeline(const std::vector<RenderProgram*> &progs) = 0;
-			virtual std::unique_ptr<RenderFramebuffer> doCreateFramebuffer(std::uint16_t w, std::uint16_t h, const std::vector<Texture::Kind> &attachments) = 0;
+			virtual UniquePtr<RenderGroup> doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes) = 0;
+			virtual UniquePtr<RenderProgram> doCreateProgram(RenderProgram::Kind kind, std::string_view src) = 0;
+			virtual UniquePtr<RenderPipeline> doCreatePipeline(const Vector<RenderProgram*> &progs) = 0;
+			virtual UniquePtr<RenderFramebuffer> doCreateFramebuffer(std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments) = 0;
 
-			plf::list<std::unique_ptr<RenderGroup>> m_groups;
-			plf::list<std::unique_ptr<RenderProgram>> m_progs;
-			plf::list<std::unique_ptr<RenderPipeline>> m_pipelines;
-			plf::list<std::unique_ptr<RenderFramebuffer>> m_fbs;
+			List<UniquePtr<RenderGroup>> m_groups;
+			List<UniquePtr<RenderProgram>> m_progs;
+			List<UniquePtr<RenderPipeline>> m_pipelines;
+			List<UniquePtr<RenderFramebuffer>> m_fbs;
 	};
 }
 
@@ -104,6 +102,6 @@ namespace gpwe{
 extern "C" const char *gpweRendererName(){ return name; }\
 extern "C" const char *gpweRendererAuthor(){ return author; }\
 extern "C" gpwe::Version gpweRendererVersion(){ return { major, minor, patch }; }\
-extern "C" std::unique_ptr<gpwe::Renderer> gpweCreateRenderer(void *param){ return std::make_unique<type>(param); }
+extern "C" gpwe::UniquePtr<gpwe::Renderer> gpweCreateRenderer(void *param){ return gpwe::makeUnique<type>(param); }
 
 #endif // !GPWE_RENDERER_HPP

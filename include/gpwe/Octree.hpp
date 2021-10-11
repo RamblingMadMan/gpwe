@@ -5,7 +5,8 @@
 #include <cstdint>
 #include <variant>
 #include <array>
-#include <vector>
+
+#include "Vector.hpp"
 
 namespace gpwe{
 	template<typename LeafData>
@@ -88,7 +89,7 @@ namespace gpwe{
 
 			Octree(){}
 
-			Node *emplaceNode(const std::vector<std::uint8_t> &indices){
+			Node *emplaceNode(const Vector<std::uint8_t> &indices){
 				if(indices.empty()) return nullptr;
 
 				auto rootIdx = indices[0];
@@ -113,7 +114,7 @@ namespace gpwe{
 
 		private:
 			std::array<Node, NumLevels> m_root;
-			std::array<std::vector<Node>, NumLevels> m_levels;
+			std::array<Vector<Node>, NumLevels> m_levels;
 	};
 }
 

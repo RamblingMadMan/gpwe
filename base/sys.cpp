@@ -1,8 +1,6 @@
-#include <string_view>
 #include <atomic>
 #include <optional>
 #include <functional>
-#include <memory>
 #include <chrono>
 #include <filesystem>
 
@@ -17,7 +15,7 @@ using LibHandle = HMODULE;
 LibHandle loadLibrary(const char *path){ return LoadLibraryA(path); }
 void closeLibrary(LibHandle lib){ FreeLibrary(lib); }
 const char *loadLibraryError(){
-	static std::string errMsg;
+	static Str errMsg;
 	errMsg = std::to_string(GetLastError());
 	return errMsg.c_str();
 }
@@ -69,39 +67,39 @@ void *gpweRendererLib = nullptr;
 using GPWEProc = void(*)();
 using GPWEGetProcFn = GPWEProc(*)(const char*);
 
-using GPWECreateAppFn = std::unique_ptr<App>(*)();
-using GPWECreateRendererFn = std::unique_ptr<Renderer>(*)(void*);
+using GPWECreateAppFn = UniquePtr<App>(*)();
+using GPWECreateRendererFn = UniquePtr<Renderer>(*)(void*);
 
 GPWECreateAppFn gpweCreateApp;
 GPWECreateRendererFn gpweCreateRenderer;
 
 input::Manager *gpweInputManager;
-std::unique_ptr<App> gpweApp;
-std::unique_ptr<Renderer> gpweRenderer;
+UniquePtr<App> gpweApp;
+UniquePtr<Renderer> gpweRenderer;
 gpwe::Camera gpweCamera(90.f, 1290.f/720.f);
 
 std::uint16_t gpweWidth, gpweHeight;
 
 std::atomic_bool gpweRunning = false;
 
-inline void logHeader(const std::string &str){ gpwe::log("{:^30}\n\n", str); }
+inline void logHeader(const Str &str){ gpwe::log("{:^30}\n\n", str); }
 
 void initLibraries(int argc, char *argv[]){
-	std::string_view names[] = {
+	StrView names[] = {
 		"PhysFS",
 		"Freetype",
 		"FreeImage"
 	};
 
-	std::function<std::optional<std::string>()> fns[] = {
-		[argv]() -> std::optional<std::string>{
+	std::function<std::optional<Str>()> fns[] = {
+		[argv]() -> std::optional<Str>{
 			if(!PHYSFS_init(argv[0])){
 				return PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
 			}
 
 			return std::nullopt;
 		},
-		[]() -> std::optional<std::string>{
+		[]() -> std::optional<Str>{
 			auto err = FT_Init_FreeType(&gpweFtLib);
 			if(err != FT_Err_Ok){
 				// TODO: get error message
@@ -111,7 +109,7 @@ void initLibraries(int argc, char *argv[]){
 			std::atexit([]{ FT_Done_FreeType(gpweFtLib); });
 			return std::nullopt;
 		},
-		[]() -> std::optional<std::string>{
+		[]() -> std::optional<Str>{
 			FreeImage_Initialise();
 			std::atexit(FreeImage_DeInitialise);
 			return std::nullopt;
@@ -151,7 +149,7 @@ void printVersions(){
 	FT_Int ftMaj, ftMin, ftPatch;
 	FT_Library_Version(gpweFtLib, &ftMaj, &ftMin, &ftPatch);
 
-	std::string_view libs[] = {
+	StrView libs[] = {
 		"PhysFS",
 		"Freetype",
 		"FreeImage",
@@ -161,11 +159,11 @@ void printVersions(){
 	PHYSFS_Version pfsVer;
 	PHYSFS_getLinkedVersion(&pfsVer);
 
-	std::string versions[] = {
-		fmt::format("{}.{}.{}", pfsVer.major, pfsVer.minor, pfsVer.patch),
-		fmt::format("{}.{}.{}", ftMaj, ftMin, ftPatch),
+	Str versions[] = {
+		gpwe::format("{}.{}.{}", pfsVer.major, pfsVer.minor, pfsVer.patch),
+		gpwe::format("{}.{}.{}", ftMaj, ftMin, ftPatch),
 		FreeImage_GetVersion(),
-		fmt::format("{}.{}.{}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch())
+		gpwe::format("{}.{}.{}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch())
 	};
 
 	logHeader("Version Info");
@@ -191,7 +189,7 @@ void sys::init(
 	logLn("{}", std::ctime(&launchTime));
 
 	log("{:^{}}\n\n",
-		fmt::format("-- General Purpose World Engine v{}.{}.{}/{} --", GPWE_VERSION_MAJOR, GPWE_VERSION_MINOR, GPWE_VERSION_PATCH, GPWE_VERSION_GIT),
+		format("-- General Purpose World Engine v{}.{}.{}/{} --", GPWE_VERSION_MAJOR, GPWE_VERSION_MINOR, GPWE_VERSION_PATCH, GPWE_VERSION_GIT),
 		30
 	);
 
@@ -210,13 +208,13 @@ void sys::init(
 
 	auto curPath = fs::current_path();
 
-	std::vector<std::string> appPaths, rendererPaths;
+	std::vector<Str> appPaths, rendererPaths;
 
 	for(auto it = fs::directory_iterator(curPath); it != fs::directory_iterator(); ++it){
 		auto fileName = it->path().filename().string();
 
-		constexpr std::string_view appPrefix = LIB_PREFIX "gpwe-app-";
-		constexpr std::string_view rendererPrefix = LIB_PREFIX "gpwe-renderer-";
+		constexpr StrView appPrefix = LIB_PREFIX "gpwe-app-";
+		constexpr StrView rendererPrefix = LIB_PREFIX "gpwe-renderer-";
 
 		if(fileName.find(appPrefix) == 0){
 			if(fileName.rfind(LIB_EXT) != fileName.size() - (std::size(LIB_PREFIX) - 1)){
@@ -339,6 +337,14 @@ int sys::exec(PresentFn presentFn, void *rendererArg){
 
 void sys::exit(){
 	gpweRunning = false;
+}
+
+void *sys::alloc(std::size_t n){
+	return std::malloc(n);
+}
+
+void sys::free(void *ptr){
+	std::free(ptr);
 }
 
 Camera *sys::camera(){ return &gpweCamera; }

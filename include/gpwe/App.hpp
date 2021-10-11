@@ -2,17 +2,17 @@
 #define GPWE_APP_HPP 1
 
 #include <memory>
-#include <string_view>
 
 #include "gpwe/Version.hpp"
+#include "gpwe/String.hpp"
 
 namespace gpwe{
 	class App{
 		public:
 			virtual ~App() = default;
 
-			virtual std::string_view name() const noexcept = 0;
-			virtual std::string_view author() const noexcept = 0;
+			virtual StrView name() const noexcept = 0;
+			virtual StrView author() const noexcept = 0;
 			virtual Version version() const noexcept = 0;
 
 			virtual void update(float dt) = 0;
@@ -23,6 +23,6 @@ namespace gpwe{
 extern "C" const char *gpweAppName(){ return name; }\
 extern "C" const char *gpweAppAuthor(){ return author; }\
 extern "C" gpwe::Version gpweAppVersion(){ return { major, minor, patch }; }\
-extern "C" std::unique_ptr<gpwe::App> gpweCreateApp(){ return std::make_unique<type>(); }
+extern "C" gpwe::UniquePtr<gpwe::App> gpweCreateApp(){ return gpwe::makeUnique<type>(); }
 
 #endif // !GPWE_APP_HPP
