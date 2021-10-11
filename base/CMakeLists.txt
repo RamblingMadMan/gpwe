@@ -1,3 +1,4 @@
+find_package(LibMagic REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(FreeImage REQUIRED)
 
@@ -8,7 +9,6 @@ set(
 	resource.cpp
 	Camera.cpp
 	Shape.cpp
-	Model.cpp
 	Renderer.cpp
 	Font.cpp
 	World.cpp
@@ -24,7 +24,11 @@ set_target_properties(
 
 target_include_directories(gpwe-base PUBLIC ${GPWE_INCLUDE_DIRS})
 
-target_include_directories(gpwe-base PRIVATE ${PHYSFS_INCLUDE_DIRS})
+target_include_directories(
+	gpwe-base PRIVATE
+	${PHYSFS_INCLUDE_DIRS}
+	${LIBMAGIC_INCLUDE_DIRS}
+)
 
 target_link_libraries(
 	gpwe-base PRIVATE
@@ -32,6 +36,7 @@ target_link_libraries(
 	fmt
 	glm::glm_static
 	physfs-static
+	${LIBMAGIC_LIBRARIES}
 	Freetype::Freetype
 	FreeImage::FreeImage
 	assimp

@@ -13,6 +13,10 @@ namespace gpwe::input{
 	class Manager;
 }
 
+namespace gpwe::resource{
+	class Manager;
+}
+
 namespace gpwe::sys{
 	using PresentFn = std::function<void()>;
 
@@ -33,6 +37,7 @@ namespace gpwe::sys{
 	Camera *camera();
 	Renderer *renderer();
 	input::Manager *inputManager();
+	resource::Manager *resourceManager();
 }
 
 #endif // !GPWE_SYS_HPP

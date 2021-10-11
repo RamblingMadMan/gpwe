@@ -1,5 +1,7 @@
 #include "gpwe/input.hpp"
 #include "gpwe/sys.hpp"
+#include "gpwe/resource.hpp"
+#include "gpwe/log.hpp"
 #include "gpwe/Shape.hpp"
 
 #include "glm/glm.hpp"
@@ -11,25 +13,31 @@ using namespace gpwe;
 GPWE_APP(TestApp, "TESTGAME", "RamblingMad", 0, 0, 0)
 
 TestApp::TestApp(){
+	auto resources = sys::resourceManager();
+	auto inputs = sys::inputManager();
+
 	sys::camera()->translate({ 0.f, 0.f, -2.f });
 
-	guyMdl.loadModel("./Assets/Models/SphereGuy.fbx");
 	shapes::Cube cube(2.f);
 
 	cubeGroup = sys::renderer()->createGroup(&cube);
 	cubeGroup->setNumInstances(0);
 
-	guyGroup = sys::renderer()->createGroup(guyMdl.shape(0));
+	auto guyMdl = resources->openModel("/Assets/Models/SphereGuy.fbx");
+	if(guyMdl){
+		guyGroup = sys::renderer()->createGroup(&guyMdl->meshes()[0]);
+	}
+	else{
+		logErrorLn("could not open '/Assets/Models/SphereGuy.fbx'");
+	}
 
-	auto inputManager = sys::inputManager();
-
-	inputManager->onPumpEvents([this]{
+	inputs->onPumpEvents([this]{
 		rot = { 0.f, 0.f, 0.f };
 	});
 
-	inputManager->system()->onExitEvent(sys::exit);
+	inputs->system()->onExitEvent(sys::exit);
 
-	auto kb = inputManager->keyboard();
+	auto kb = inputs->keyboard();
 
 	kb->onKeyEvent([this](input::Key key, bool pressed){
 		using Key = input::Key;
@@ -74,7 +82,7 @@ TestApp::TestApp(){
 		}
 	});
 
-	auto mouse = inputManager->mouse();
+	auto mouse = inputs->mouse();
 
 	mouse->onButtonEvent([this](input::MouseButton btn, bool pressed){
 		using Button = input::MouseButton;

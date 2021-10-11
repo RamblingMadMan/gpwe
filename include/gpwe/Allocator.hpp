@@ -74,7 +74,7 @@ namespace gpwe{
 
 			template<typename U>
 			UniquePtr &operator=(UniquePtr<U> &&other) noexcept{
-				if(this != &other){
+				if((void*)this != (void*)&other){
 					destroy();
 					m_ptr = other.release();
 				}

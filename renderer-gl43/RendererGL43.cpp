@@ -198,6 +198,8 @@ RendererGL43::RendererGL43(void *getProcFn){
 	logLn("");
 
 	logLn("OpenGL Version: {}", (const char*)glGetString(GL_VERSION));
+
+	logLn("");
 }
 
 RendererGL43::~RendererGL43(){

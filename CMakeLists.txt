@@ -29,6 +29,7 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/Allocator.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Vector.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/List.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Map.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/String.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/input.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/resource.hpp
@@ -36,7 +37,6 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/Camera.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Shape.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Texture.hpp
-	${GPWE_INCLUDE_DIR}/gpwe/Model.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Renderer.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/App.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/World.hpp

@@ -33,6 +33,7 @@ GPWE is an engine designed primarily for creating games and 3D environments, but
 | Dependency | Included |
 |:-----------|:--------:|
 | SDL2       | ❌ |
+| libmagic   | ❌ |
 | Freetype   | ❌ |
 | FreeImage  | ❌ |
 | Assimp     | ✅ |
@@ -50,7 +51,7 @@ GPWE is an engine designed primarily for creating games and 3D environments, but
 <h4 align="center">Ubuntu</h4>
 
 ```bash
-sudo apt install libsdl2-dev libfreetype-dev libfreeimage-dev
+sudo apt install libmagic-dev libsdl2-dev libfreetype-dev libfreeimage-dev
 ```
 <p><br /></p>
 

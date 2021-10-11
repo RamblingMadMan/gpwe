@@ -1,16 +1,18 @@
 #ifndef GPWE_RESOURCE_HPP
 #define GPWE_RESOURCE_HPP 1
 
-#include <string_view>
 #include <memory>
-#include <vector>
-#include <map>
 #include <filesystem>
 
+#include "String.hpp"
+#include "Map.hpp"
+#include "Shape.hpp"
 #include "Texture.hpp"
 
 namespace gpwe{
 	namespace fs = std::filesystem;
+
+	using Path = fs::path;
 }
 
 namespace gpwe::resource{
@@ -27,7 +29,7 @@ namespace gpwe::resource{
 			};
 
 			enum class Category{
-				image, text, binary,
+				binary, text, image, model,
 
 				count
 			};
@@ -37,7 +39,7 @@ namespace gpwe::resource{
 			Kind kind() const noexcept{ return m_kind; }
 			Access access() const noexcept{ return m_access; }
 			Category category() const noexcept{ return m_cat; }
-			std::string_view path() const noexcept{ return m_path; }
+			const Str &path() const noexcept{ return m_path; }
 
 			bool hasRead(){ return (std::uint8_t)access() & (std::uint8_t)Access::read; }
 			bool hasWrite(){ return (std::uint8_t)access() & (std::uint8_t)Access::write; }
@@ -56,34 +58,34 @@ namespace gpwe::resource{
 			}
 
 		protected:
-			Asset(Kind kind_, Access access_, Category cat_, std::string path_) noexcept
+			Asset(Kind kind_, Access access_, Category cat_, Str path_) noexcept
 				: m_kind(kind_), m_access(access_), m_path(std::move(path_)){}
 
-			void setDataRW(Kind kind_, std::size_t size_, void *data_){
-				m_kind = kind_;
-				m_access = Access::readWrite;
-				m_size = size_;
-				m_data.w = data_;
+			void setAccess(Access access_) noexcept{
+				m_access = access_;
 			}
 
-			void setDataR(Kind kind_, std::size_t size_, const void *data_){
+			union DataPtr{
+				const void *r;
+				void *w;
+			};
+
+			void setData(Kind kind_, Access access_, std::size_t size_, DataPtr data_){
 				m_kind = kind_;
-				m_access = Access::read;
+				m_access = access_;
 				m_size = size_;
-				m_data.r = data_;
+				m_data = data_;
 			}
+
+			virtual void update(){}
 
 		private:
 			Kind m_kind;
 			Access m_access;
 			Category m_cat;
-			std::string m_path;
+			Str m_path;
 			std::size_t m_size = 0;
-
-			union {
-				const void *r;
-				void *w;
-			} m_data;
+			DataPtr m_data;
 
 			friend class Manager;
 	};
@@ -96,7 +98,7 @@ namespace gpwe::resource{
 
 		protected:
 			Image(
-				Kind kind_, Access access_, std::string path_,
+				Kind kind_, Access access_, Str path_,
 				Texture::Kind texKind_,
 				std::uint16_t w_, std::uint16_t h_
 			)
@@ -114,8 +116,31 @@ namespace gpwe::resource{
 		private:
 			Texture::Kind m_texKind;
 			std::uint16_t m_w, m_h;
+	};
 
-			friend class Manager;
+	class Model: public Asset{
+		public:
+			const Vector<shapes::TriangleMesh> &meshes() const noexcept{
+				return m_meshes;
+			}
+
+		protected:
+			Model(
+				Kind kind_, Access access_, Str path_,
+				Vector<shapes::TriangleMesh> meshes_
+			)
+				: Asset(kind_, access_, Category::model, std::move(path_))
+				, m_meshes(std::move(meshes_))
+			{
+				setData(
+					kind_, access_,
+					m_meshes.size() * sizeof(shapes::TriangleMesh),
+					{ .w = m_meshes.data() }
+				);
+			}
+
+		private:
+			Vector<shapes::TriangleMesh> m_meshes;
 	};
 
 	class Manager{
@@ -123,14 +148,22 @@ namespace gpwe::resource{
 			Manager();
 			~Manager();
 
-			bool mount(const fs::path &path, std::string_view dir, bool mountBefore = true);
+			bool mount(const Path &path, StrView dir, bool mountBefore = true);
 
-			Asset *openFile(std::string_view path);
+			Asset *openFile(StrView path, Asset::Access access_ = Asset::Access::read);
+			Model *openModel(StrView path, Asset::Access access_ = Asset::Access::read);
+
+			void update();
 
 		private:
-			std::map<std::string, std::string> m_mounts;
-			std::vector<std::unique_ptr<Asset>> m_assets;
-			std::map<Asset*, void*> m_memMap;
+			UniquePtr<Model> createModelFileAsset(
+				Str path, Asset::Access access_,
+				Vector<char> bytes
+			);
+
+			Map<Str, Str> m_mounts;
+			Vector<UniquePtr<Asset>> m_assets;
+			Map<Str, Asset*> m_files;
 	};
 }
 

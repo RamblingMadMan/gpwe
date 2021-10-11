@@ -42,11 +42,14 @@ GPWEProc loadFunction(LibHandle lib, const char *name){
 #include "gpwe/log.hpp"
 #include "gpwe/input.hpp"
 #include "gpwe/sys.hpp"
+#include "gpwe/resource.hpp"
 #include "gpwe/Camera.hpp"
 #include "gpwe/Renderer.hpp"
 #include "gpwe/App.hpp"
 
 #include "physfs.h"
+
+#include "magic.h"
 
 #include "ft2build.h"
 #include FT_FREETYPE_H
@@ -59,7 +62,9 @@ GPWEProc loadFunction(LibHandle lib, const char *name){
 
 using namespace gpwe;
 
-static FT_Library gpweFtLib = nullptr;
+FT_Library gpweFtLib = nullptr;
+
+magic_t gpweMagic = nullptr;
 
 void *gpweAppLib = nullptr;
 void *gpweRendererLib = nullptr;
@@ -74,6 +79,8 @@ GPWECreateAppFn gpweCreateApp;
 GPWECreateRendererFn gpweCreateRenderer;
 
 input::Manager *gpweInputManager;
+resource::Manager gpweResourceManager;
+
 UniquePtr<App> gpweApp;
 UniquePtr<Renderer> gpweRenderer;
 gpwe::Camera gpweCamera(90.f, 1290.f/720.f);
@@ -87,6 +94,7 @@ inline void logHeader(const Str &str){ gpwe::log("{:^30}\n\n", str); }
 void initLibraries(int argc, char *argv[]){
 	StrView names[] = {
 		"PhysFS",
+		"libmagic",
 		"Freetype",
 		"FreeImage"
 	};
@@ -95,6 +103,31 @@ void initLibraries(int argc, char *argv[]){
 		[argv]() -> std::optional<Str>{
 			if(!PHYSFS_init(argv[0])){
 				return PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
+			}
+
+			PHYSFS_setSaneConfig("Hamsmith", "GPWE", nullptr, 1, 0);
+
+			auto assetPath = fs::current_path() / "Assets";
+
+			if(fs::exists(assetPath) && fs::is_directory(assetPath)){
+				PHYSFS_mount(assetPath.c_str(), "/Assets", 0);
+			}
+			else{
+				PHYSFS_mkdir("/Assets");
+			}
+
+			return std::nullopt;
+		},
+		[]() -> std::optional<Str>{
+			gpweMagic = magic_open(MAGIC_NO_CHECK_COMPRESS | MAGIC_MIME);
+			if(!gpweMagic){
+				return format("error in magic_open: {}", magic_error(nullptr));
+			}
+
+			std::atexit([]{ magic_close(gpweMagic); });
+
+			if(magic_load(gpweMagic, nullptr) != 0) {
+				return format("error in magic_load: {}", magic_error(gpweMagic));
 			}
 
 			return std::nullopt;
@@ -151,6 +184,7 @@ void printVersions(){
 
 	StrView libs[] = {
 		"PhysFS",
+		"libmagic",
 		"Freetype",
 		"FreeImage",
 		"Assimp"
@@ -161,6 +195,7 @@ void printVersions(){
 
 	Str versions[] = {
 		gpwe::format("{}.{}.{}", pfsVer.major, pfsVer.minor, pfsVer.patch),
+		gpwe::format("{}", magic_version()),
 		gpwe::format("{}.{}.{}", ftMaj, ftMin, ftPatch),
 		FreeImage_GetVersion(),
 		gpwe::format("{}.{}.{}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch())
@@ -352,3 +387,5 @@ Camera *sys::camera(){ return &gpweCamera; }
 Renderer *sys::renderer(){ return gpweRenderer.get(); }
 
 input::Manager *sys::inputManager(){ return gpweInputManager; }
+
+resource::Manager *sys::resourceManager(){ return &gpweResourceManager; }
