@@ -14,10 +14,12 @@ set_target_properties(
 
 target_link_libraries(gpwe-app-test gpwe-base)
 
-add_custom_command(TARGET gpwe-app-test POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:gpwe-app-test> ${CMAKE_BINARY_DIR}/client/
-)
+if(GPWE_BUILD_CLIENT)
+	add_custom_command(TARGET gpwe-app-test POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:gpwe-app-test> ${CMAKE_BINARY_DIR}/client/
+	)
 
-add_custom_command(TARGET gpwe-app-test POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/Assets ${CMAKE_BINARY_DIR}/client/Assets
-)
+	add_custom_command(TARGET gpwe-app-test POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/Assets ${CMAKE_BINARY_DIR}/client/Assets
+	)
+endif()

@@ -19,6 +19,8 @@ set_target_properties(
 target_link_libraries(gpwe-renderer-gl43 PRIVATE glbinding glbinding-aux)
 target_link_libraries(gpwe-renderer-gl43 PUBLIC gpwe-base)
 
-add_custom_command(TARGET gpwe-renderer-gl43 POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:gpwe-renderer-gl43> ${CMAKE_BINARY_DIR}/client/
-)
+if(GPWE_BUILD_CLIENT)
+	add_custom_command(TARGET gpwe-renderer-gl43 POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:gpwe-renderer-gl43> ${CMAKE_BINARY_DIR}/client/
+	)
+endif()
