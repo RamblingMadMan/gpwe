@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <functional>
 
-#include "Allocator.hpp"
-
 namespace gpwe{
 	class Camera;
 	class Renderer;
