@@ -67,11 +67,9 @@ FT_Library gpweFtLib = nullptr;
 
 magic_t gpweMagic = nullptr;
 
-void *gpweAppLib = nullptr;
-void *gpweRendererLib = nullptr;
-
-using GPWEProc = void(*)();
-using GPWEGetProcFn = GPWEProc(*)(const char*);
+static void *gpweAppLib = nullptr;
+static void *gpweRendererLib = nullptr;
+static void *gpweRendererArg = nullptr;
 
 using GPWECreateAppFn = UniquePtr<App>(*)();
 using GPWECreateRendererFn = UniquePtr<Renderer>(*)(void*);
@@ -92,7 +90,7 @@ std::atomic_bool gpweRunning = false;
 
 inline void logHeader(const Str &str){ gpwe::log("{:^30}\n\n", str); }
 
-void initLibraries(int argc, char *argv[]){
+static void initLibraries(int argc, char *argv[]){
 	StrView names[] = {
 		"PhysFS",
 		"libmagic",
@@ -179,7 +177,7 @@ constexpr int apiNameColWidth = 16;
 constexpr int apiVersionColWidth = 30;
 constexpr int apiVersionWidth = apiNameColWidth + apiVersionColWidth;
 
-void printVersions(){
+static void printVersions(){
 	FT_Int ftMaj, ftMin, ftPatch;
 	FT_Library_Version(gpweFtLib, &ftMaj, &ftMin, &ftPatch);
 
@@ -214,6 +212,10 @@ void printVersions(){
 	}
 
 	gpwe::log("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
+}
+
+void sys::setRendererArg(void *val){
+	gpweRendererArg = val;
 }
 
 void sys::initSys(
@@ -278,15 +280,6 @@ void sys::initSys(
 		}
 	}
 
-	// Load app
-	gpweAppLib = loadLibrary(!appPaths.empty() ? appPaths[0].c_str() : nullptr);
-	if(!gpweAppLib){
-		logErrorLn("{}", loadLibraryError());
-		std::exit(3);
-	}
-
-	std::atexit([]{ closeLibrary(gpweAppLib); });
-
 	// Load renderer
 	gpweRendererLib = loadLibrary(!rendererPaths.empty() ? rendererPaths[0].c_str() : nullptr);
 	if(!gpweRendererLib){
@@ -296,13 +289,14 @@ void sys::initSys(
 
 	std::atexit([]{ closeLibrary(gpweRendererLib); });
 
-	auto createAppFn = loadFunction(gpweAppLib, "gpweCreateApp");
-	if(!createAppFn){
+	// Load app
+	gpweAppLib = loadLibrary(!appPaths.empty() ? appPaths[0].c_str() : nullptr);
+	if(!gpweAppLib){
 		logErrorLn("{}", loadLibraryError());
 		std::exit(3);
 	}
 
-	gpweCreateApp = reinterpret_cast<GPWECreateAppFn>(createAppFn);
+	std::atexit([]{ closeLibrary(gpweAppLib); });
 
 	auto createRendererFn = loadFunction(gpweRendererLib, "gpweCreateRenderer");
 	if(!createRendererFn){
@@ -312,14 +306,22 @@ void sys::initSys(
 
 	gpweCreateRenderer = reinterpret_cast<GPWECreateRendererFn>(createRendererFn);
 
+	auto createAppFn = loadFunction(gpweAppLib, "gpweCreateApp");
+	if(!createAppFn){
+		logErrorLn("{}", loadLibraryError());
+		std::exit(3);
+	}
+
+	gpweCreateApp = reinterpret_cast<GPWECreateAppFn>(createAppFn);
+
 	printVersions();
 }
 
-void sys::initRenderer(std::uint16_t w, std::uint16_t h, void *arg){
+void sys::initRenderer(std::uint16_t w, std::uint16_t h){
 	gpweWidth = w;
 	gpweHeight = h;
 
-	gpweRenderer = gpweCreateRenderer(arg);
+	gpweRenderer = gpweCreateRenderer(gpweRendererArg);
 
 	std::fflush(stdout);
 

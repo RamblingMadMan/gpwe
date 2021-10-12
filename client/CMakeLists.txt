@@ -18,4 +18,5 @@ target_include_directories(gpwe-client PRIVATE ${SDL2_INCLUDE_DIRS})
 
 target_link_libraries(gpwe-client gpwe-base ${SDL2_LIBRARIES})
 
-add_dependencies(gpwe-client gpwe-renderer-gl43 gpwe-app-test)
+gpwe_embed_renderer(gpwe-client gpwe-renderer-gl43)
+gpwe_embed_app(gpwe-client gpwe-app-test)

@@ -48,3 +48,46 @@ target_link_libraries(
 	fmt-header-only
 	plf-list
 )
+
+# Usage: add_gpwe_renderer(my-renderer MyRenderer.hpp MyRenderer.cpp)
+function(add_gpwe_renderer name)
+	add_library(${name} SHARED ${ARGN})
+	target_link_libraries(${name} PUBLIC gpwe-base)
+	set_target_properties(
+		${name} PROPERTIES
+		CXX_STANDARD 17
+		CXX_STANDARD_REQUIRED ON
+	)
+endfunction()
+
+# Usage: add_gpwe_app(my-app MyApp.hpp MyApp.cpp)
+function(add_gpwe_app name)
+	add_library(${name} SHARED ${ARGN})
+	target_link_libraries(${name} PUBLIC gpwe-base)
+	set_target_properties(
+		${name} PROPERTIES
+		CXX_STANDARD 17
+		CXX_STANDARD_REQUIRED ON
+	)
+endfunction()
+
+function(gpwe_embed_renderer client renderer)
+	add_dependencies(${client} ${renderer})
+
+	add_custom_command(TARGET ${client} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${renderer}> $<TARGET_FILE_DIR:${client}>
+	)
+endfunction()
+
+function(gpwe_embed_app client app)
+	add_dependencies(${client} ${app})
+
+	add_custom_command(TARGET ${client} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${app}> $<TARGET_FILE_DIR:${client}>
+	)
+
+	add_custom_command(
+		TARGET ${client} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_PROPERTY:${app},SOURCE_DIR>/Assets $<TARGET_FILE_DIR:${client}>/Assets
+	)
+endfunction()

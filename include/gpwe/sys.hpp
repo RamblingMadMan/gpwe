@@ -20,8 +20,10 @@ namespace gpwe::resource{
 namespace gpwe::sys{
 	using PresentFn = std::function<void()>;
 
+	void setRendererArg(void *val = nullptr);
+
 	void initSys(int argc, char *argv[], input::Manager *inputManager_);
-	void initRenderer(std::uint16_t w, std::uint16_t h, void *arg = nullptr);
+	void initRenderer(std::uint16_t w, std::uint16_t h);
 	void initApp();
 
 	void tick(float dt);

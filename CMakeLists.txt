@@ -13,6 +13,7 @@ endif()
 option(GPWE_BUILD_EDITOR "Build the GPWE editor" ${GPWE_MASTER_PROJECT})
 option(GPWE_BUILD_CLIENT "Build the GPWE client" ${GPWE_MASTER_PROJECT})
 option(GPWE_BUILD_TESTGAME "Build the GPWE test game" ${GPWE_MASTER_PROJECT})
+option(GPWE_BUILD_TESTEMBED "Build the GPWE embedding test app" ${GPWE_MASTER_PROJECT})
 
 execute_process(
 	COMMAND git rev-parse --short HEAD
@@ -84,10 +85,17 @@ add_subdirectory(deps/assimp EXCLUDE_FROM_ALL)
 add_subdirectory(base)
 add_subdirectory(renderer-gl43)
 
+if(GPWE_BUILD_TESTGAME)
+	add_subdirectory(testgame)
+endif()
+
 if(GPWE_BUILD_CLIENT)
 	add_subdirectory(client)
 endif()
 
-if(GPWE_BUILD_TESTGAME)
-	add_subdirectory(testgame)
+if(GPWE_BUILD_TESTEMBED)
+	if(NOT GPWE_BUILD_TESTGAME)
+		add_subdirectory(testgame)
+	endif()
+	add_subdirectory(testembed)
 endif()

@@ -184,7 +184,7 @@ namespace gpwe::input{
 			}
 
 		protected:
-			virtual void doPumpEvents() = 0;
+			virtual void doPumpEvents(){}
 
 			template<typename T>
 			static T *getFromList(List<T> &l, std::uint32_t idx){

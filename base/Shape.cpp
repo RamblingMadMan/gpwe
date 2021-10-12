@@ -172,5 +172,5 @@ shapes::TriangleMesh HeightMapShape::generateMesh(float scale) const{
 		}
 	}
 
-
+	throw std::runtime_error("Heightmap mesh generation not implemented");
 }
