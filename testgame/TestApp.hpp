@@ -10,10 +10,6 @@ class TestApp: public gpwe::App{
 		TestApp();
 		~TestApp();
 
-		std::string_view name() const noexcept override{ return "TESTGAME"; }
-		std::string_view author() const noexcept override{ return "RamblingMad"; }
-		gpwe::Version version() const noexcept override{ return { 0, 0, 0 }; }
-
 		void update(float dt) override;
 
 	private:

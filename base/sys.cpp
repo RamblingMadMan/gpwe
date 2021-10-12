@@ -28,7 +28,7 @@ GPWEProc loadFunction(LibHandle lib, const char *name){
 #else
 #include <dlfcn.h>
 using LibHandle = void*;
-LibHandle loadLibrary(const char *path){ return dlopen(path, RTLD_NOW); }
+LibHandle loadLibrary(const char *path){ return dlopen(path, RTLD_LAZY); }
 void closeLibrary(LibHandle lib){ dlclose(lib); }
 const char *loadLibraryError(){ return dlerror(); }
 GPWEProc loadFunction(LibHandle lib, const char *name){
@@ -71,11 +71,8 @@ static void *gpweAppLib = nullptr;
 static void *gpweRendererLib = nullptr;
 static void *gpweRendererArg = nullptr;
 
-using GPWECreateAppFn = App*(*)();
-using GPWECreateRendererFn = Renderer*(*)(void*);
-
-GPWECreateAppFn gpweCreateApp;
-GPWECreateRendererFn gpweCreateRenderer;
+sys::CreateAppFn gpweCreateApp;
+sys::CreateRendererFn gpweCreateRenderer;
 
 input::Manager *gpweInputManager;
 resource::Manager gpweResourceManager;
@@ -214,6 +211,14 @@ static void printVersions(){
 	gpwe::log("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
 }
 
+void sys::setCreateAppFn(CreateAppFn fn){
+	gpweCreateApp = fn;
+}
+
+void sys::setCreateRendererFn(CreateRendererFn fn){
+	gpweCreateRenderer = fn;
+}
+
 void sys::setRendererArg(void *val){
 	gpweRendererArg = val;
 }
@@ -280,39 +285,43 @@ void sys::initSys(
 		}
 	}
 
-	// Load renderer
-	gpweRendererLib = loadLibrary(!rendererPaths.empty() ? rendererPaths[0].c_str() : nullptr);
-	if(!gpweRendererLib){
-		logErrorLn("{}", loadLibraryError());
-		std::exit(3);
+	if(!gpweCreateRenderer){
+		// Load renderer
+		gpweRendererLib = loadLibrary(!rendererPaths.empty() ? rendererPaths[0].c_str() : nullptr);
+		if(!gpweRendererLib){
+			logErrorLn("{}", loadLibraryError());
+			std::exit(3);
+		}
+
+		std::atexit([]{ closeLibrary(gpweRendererLib); });
+
+		auto createRendererFn = loadFunction(gpweRendererLib, "gpweCreateRenderer");
+		if(!createRendererFn){
+			logErrorLn("{}", loadLibraryError());
+			std::exit(3);
+		}
+
+		gpweCreateRenderer = reinterpret_cast<sys::CreateRendererFn>(createRendererFn);
 	}
 
-	std::atexit([]{ closeLibrary(gpweRendererLib); });
+	if(!gpweCreateApp){
+		// Load app
+		gpweAppLib = loadLibrary(!appPaths.empty() ? appPaths[0].c_str() : nullptr);
+		if(!gpweAppLib){
+			logErrorLn("{}", loadLibraryError());
+			std::exit(3);
+		}
 
-	// Load app
-	gpweAppLib = loadLibrary(!appPaths.empty() ? appPaths[0].c_str() : nullptr);
-	if(!gpweAppLib){
-		logErrorLn("{}", loadLibraryError());
-		std::exit(3);
+		std::atexit([]{ closeLibrary(gpweAppLib); });
+
+		auto createAppFn = loadFunction(gpweAppLib, "gpweCreateApp");
+		if(!createAppFn){
+			logErrorLn("{}", loadLibraryError());
+			std::exit(3);
+		}
+
+		gpweCreateApp = reinterpret_cast<sys::CreateAppFn>(createAppFn);
 	}
-
-	std::atexit([]{ closeLibrary(gpweAppLib); });
-
-	auto createRendererFn = loadFunction(gpweRendererLib, "gpweCreateRenderer");
-	if(!createRendererFn){
-		logErrorLn("{}", loadLibraryError());
-		std::exit(3);
-	}
-
-	gpweCreateRenderer = reinterpret_cast<GPWECreateRendererFn>(createRendererFn);
-
-	auto createAppFn = loadFunction(gpweAppLib, "gpweCreateApp");
-	if(!createAppFn){
-		logErrorLn("{}", loadLibraryError());
-		std::exit(3);
-	}
-
-	gpweCreateApp = reinterpret_cast<GPWECreateAppFn>(createAppFn);
 
 	printVersions();
 }

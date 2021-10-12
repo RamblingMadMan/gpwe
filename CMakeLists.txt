@@ -94,8 +94,5 @@ if(GPWE_BUILD_CLIENT)
 endif()
 
 if(GPWE_BUILD_TESTEMBED)
-	if(NOT GPWE_BUILD_TESTGAME)
-		add_subdirectory(testgame)
-	endif()
 	add_subdirectory(testembed)
 endif()

@@ -72,6 +72,8 @@ function(add_gpwe_app name)
 endfunction()
 
 function(gpwe_embed_renderer client renderer)
+	target_link_libraries(${client} PRIVATE gpwe-base)
+
 	add_dependencies(${client} ${renderer})
 
 	add_custom_command(TARGET ${client} POST_BUILD
@@ -80,6 +82,8 @@ function(gpwe_embed_renderer client renderer)
 endfunction()
 
 function(gpwe_embed_app client app)
+	target_link_libraries(${client} PRIVATE gpwe-base)
+
 	add_dependencies(${client} ${app})
 
 	add_custom_command(TARGET ${client} POST_BUILD

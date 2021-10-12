@@ -22,9 +22,8 @@ set_target_properties(
 
 target_link_libraries(
 	gpwe-test-embed
-	gpwe-base
+	PRIVATE
 	Qt::Core Qt::Widgets
 )
 
 gpwe_embed_renderer_gl43(gpwe-test-embed)
-gpwe_embed_app_test(gpwe-test-embed)

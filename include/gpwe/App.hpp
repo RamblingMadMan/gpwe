@@ -10,11 +10,6 @@ namespace gpwe{
 	class App{
 		public:
 			virtual ~App() = default;
-
-			virtual StrView name() const noexcept = 0;
-			virtual StrView author() const noexcept = 0;
-			virtual Version version() const noexcept = 0;
-
 			virtual void update(float dt) = 0;
 	};
 }

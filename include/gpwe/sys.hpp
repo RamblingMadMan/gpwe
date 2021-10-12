@@ -5,8 +5,9 @@
 #include <functional>
 
 namespace gpwe{
-	class Camera;
 	class Renderer;
+	class Camera;
+	class App;
 }
 
 namespace gpwe::input{
@@ -21,6 +22,12 @@ namespace gpwe::sys{
 	using PresentFn = std::function<void()>;
 
 	void setRendererArg(void *val = nullptr);
+
+	using CreateAppFn = App*(*)();
+	using CreateRendererFn = Renderer*(*)(void*);
+
+	void setCreateAppFn(CreateAppFn fn);
+	void setCreateRendererFn(CreateRendererFn fn);
 
 	void initSys(int argc, char *argv[], input::Manager *inputManager_);
 	void initRenderer(std::uint16_t w, std::uint16_t h);
