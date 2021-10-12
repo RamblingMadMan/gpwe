@@ -102,6 +102,9 @@ namespace gpwe{
 extern "C" const char *gpweRendererName(){ return name; }\
 extern "C" const char *gpweRendererAuthor(){ return author; }\
 extern "C" gpwe::Version gpweRendererVersion(){ return { major, minor, patch }; }\
-extern "C" gpwe::UniquePtr<gpwe::Renderer> gpweCreateRenderer(void *param){ return gpwe::makeUnique<type>(param); }
+extern "C" gpwe::Renderer *gpweCreateRenderer(void *param){\
+	auto mem = gpwe::sys::alloc(sizeof(type));\
+	return new(mem) type(param);\
+}
 
 #endif // !GPWE_RENDERER_HPP

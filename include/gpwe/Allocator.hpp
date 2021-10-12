@@ -75,8 +75,16 @@ namespace gpwe{
 			template<typename U>
 			UniquePtr &operator=(UniquePtr<U> &&other) noexcept{
 				if((void*)this != (void*)&other){
-					destroy();
-					m_ptr = other.release();
+					reset(other.release());
+				}
+
+				return *this;
+			}
+
+			template<typename U>
+			UniquePtr &operator=(U *ptr) noexcept{
+				if((void*)ptr != (void*)m_ptr){
+					reset(ptr);
 				}
 
 				return *this;

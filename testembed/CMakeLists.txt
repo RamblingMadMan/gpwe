@@ -4,6 +4,8 @@ set(
 	GPWE_TESTEMBED_SOURCES
 	EmbedWidget.hpp
 	EmbedWidget.cpp
+	ContainerWidget.hpp
+	ContainerWidget.cpp
 	MainWindow.hpp
 	MainWindow.cpp
 	main.cpp

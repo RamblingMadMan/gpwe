@@ -23,6 +23,9 @@ namespace gpwe{
 extern "C" const char *gpweAppName(){ return name; }\
 extern "C" const char *gpweAppAuthor(){ return author; }\
 extern "C" gpwe::Version gpweAppVersion(){ return { major, minor, patch }; }\
-extern "C" gpwe::UniquePtr<gpwe::App> gpweCreateApp(){ return gpwe::makeUnique<type>(); }
+extern "C" gpwe::App *gpweCreateApp(){\
+	auto mem = gpwe::sys::alloc(sizeof(type));\
+	return new(mem) type;\
+}
 
 #endif // !GPWE_APP_HPP

@@ -71,8 +71,8 @@ static void *gpweAppLib = nullptr;
 static void *gpweRendererLib = nullptr;
 static void *gpweRendererArg = nullptr;
 
-using GPWECreateAppFn = UniquePtr<App>(*)();
-using GPWECreateRendererFn = UniquePtr<Renderer>(*)(void*);
+using GPWECreateAppFn = App*(*)();
+using GPWECreateRendererFn = Renderer*(*)(void*);
 
 GPWECreateAppFn gpweCreateApp;
 GPWECreateRendererFn gpweCreateRenderer;
@@ -80,8 +80,8 @@ GPWECreateRendererFn gpweCreateRenderer;
 input::Manager *gpweInputManager;
 resource::Manager gpweResourceManager;
 
-UniquePtr<App> gpweApp;
 UniquePtr<Renderer> gpweRenderer;
+UniquePtr<App> gpweApp;
 gpwe::Camera gpweCamera(90.f, 1290.f/720.f);
 
 std::uint16_t gpweWidth, gpweHeight;
@@ -337,7 +337,6 @@ void sys::initApp(){
 	std::fflush(stdout);
 
 	if(!gpweApp){
-		gpweRenderer.reset();
 		logErrorLn("Error in gpweCreateApp");
 		std::exit(4);
 	}

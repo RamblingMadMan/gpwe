@@ -1,10 +1,10 @@
 #include "MainWindow.hpp"
-#include "EmbedWidget.hpp"
+#include "ContainerWidget.hpp"
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 {
 	setWindowTitle("GPWE Embed Test");
 	setContentsMargins(0, 0, 0, 0);
-	setCentralWidget(new EmbedWidget(this));
+	setCentralWidget(new ContainerWidget(this));
 }
