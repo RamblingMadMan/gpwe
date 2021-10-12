@@ -43,6 +43,7 @@ GPWEProc loadFunction(LibHandle lib, const char *name){
 #include "gpwe/input.hpp"
 #include "gpwe/sys.hpp"
 #include "gpwe/resource.hpp"
+#include "gpwe/Ticker.hpp"
 #include "gpwe/Camera.hpp"
 #include "gpwe/Renderer.hpp"
 #include "gpwe/App.hpp"
@@ -349,20 +350,12 @@ void sys::tick(float dt){
 int sys::exec(PresentFn presentFn){
 	std::fflush(stdout);
 
-	using Clock = std::chrono::high_resolution_clock;
-	using Seconds = std::chrono::duration<float>;
-
-	auto startT = Clock::now();
-	auto loopT = startT;
+	Ticker ticker;
 
 	gpweRunning = true;
 
 	while(gpweRunning){
-		auto loopEndT = Clock::now();
-		auto loopDt = Seconds(loopEndT - loopT).count();
-
-		tick(loopDt);
-
+		tick(ticker.tick());
 		presentFn();
 	}
 

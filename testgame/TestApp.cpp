@@ -120,7 +120,7 @@ void TestApp::update(float dt){
 	}
 
 	if(rotateCam){
-		rot *= rotSpeed * dt;
+		rot *= float(2.0 * M_PI) * rotSpeed * dt;
 		cam->rotate(glm::radians(-rot.x), glm::vec3(0.f, 1.f, 0.f));
 		cam->rotate(glm::radians(rot.y), glm::vec3(1.f, 0.f, 0.f));
 	}

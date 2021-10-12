@@ -21,8 +21,8 @@ class TestApp: public gpwe::App{
 		bool rotateCam = false;
 		glm::vec3 rot = { 0.f, 0.f, 0.f }, movement = { 0.f, 0.f, 0.f };
 
-		float rotSpeed = 0.075f;
-		float moveSpeed = 0.0075;
+		float rotSpeed = 2.f;
+		float moveSpeed = 2.f;
 };
 
 #endif // !TESTGAME_TESTAPP_HPP
