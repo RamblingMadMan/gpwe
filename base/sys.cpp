@@ -215,9 +215,9 @@ void printVersions(){
 	gpwe::log("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
 }
 
-void sys::init(
+void sys::initSys(
 	int argc, char *argv[],
-	input::Manager *inputManager_, std::uint16_t w, std::uint16_t h
+	input::Manager *inputManager_
 ){
 	auto launchT = std::chrono::system_clock::now();
 	std::time_t launchTime = std::chrono::system_clock::to_time_t(launchT);
@@ -234,8 +234,6 @@ void sys::init(
 	}
 
 	gpweInputManager = inputManager_;
-	gpweWidth = w;
-	gpweHeight = h;
 
 	initLibraries(argc, argv);
 
@@ -316,28 +314,39 @@ void sys::init(
 	printVersions();
 }
 
-int sys::exec(PresentFn presentFn, void *rendererArg){
+void sys::initRenderer(std::uint16_t w, std::uint16_t h, void *arg){
+	gpweWidth = w;
+	gpweHeight = h;
+
+	gpweRenderer = gpweCreateRenderer(arg);
+
 	std::fflush(stdout);
-
-	logHeader("Starting Engine");
-
-	gpweCamera = Camera(90.f, float(gpweWidth) / float(gpweHeight));
-
-	gpweRenderer = gpweCreateRenderer(rendererArg);
 
 	if(!gpweRenderer){
 		logErrorLn("Error in gpweCreateRenderer");
 		std::exit(4);
 	}
+}
 
+void sys::initApp(){
 	gpweApp = gpweCreateApp();
+
+	std::fflush(stdout);
 
 	if(!gpweApp){
 		gpweRenderer.reset();
 		logErrorLn("Error in gpweCreateApp");
 		std::exit(4);
 	}
+}
 
+void sys::tick(float dt){
+	gpweInputManager->pumpEvents();
+	gpweApp->update(dt);
+	gpweRenderer->present(&gpweCamera);
+}
+
+int sys::exec(PresentFn presentFn){
 	std::fflush(stdout);
 
 	using Clock = std::chrono::high_resolution_clock;
@@ -352,11 +361,7 @@ int sys::exec(PresentFn presentFn, void *rendererArg){
 		auto loopEndT = Clock::now();
 		auto loopDt = Seconds(loopEndT - loopT).count();
 
-		gpweInputManager->pumpEvents();
-
-		gpweApp->update(loopDt);
-
-		gpweRenderer->present(&gpweCamera);
+		tick(loopDt);
 
 		presentFn();
 	}

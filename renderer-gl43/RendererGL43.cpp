@@ -42,7 +42,6 @@ struct DrawElementsIndirectCommand{
 RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const VertexShape **shapes, std::uint32_t n)
 	: m_numShapes(numShapes)
 {
-	glCreateVertexArrays(1, &m_vao);
 	glCreateBuffers(std::size(m_bufs), m_bufs);
 
 	Vector<DrawElementsIndirectCommand> cmds;
@@ -94,6 +93,8 @@ RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const VertexShape **sh
 		GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT
 	);
 
+	glCreateVertexArrays(1, &m_vao);
+
 	glEnableVertexArrayAttrib(m_vao, 0);
 	glEnableVertexArrayAttrib(m_vao, 1);
 	glEnableVertexArrayAttrib(m_vao, 2);
@@ -130,7 +131,7 @@ void RenderGroupGL43::setNumInstances(std::uint32_t n){
 	for(std::uint32_t i = 0; i < m_numShapes; i++){
 		auto cmd = cmds + i;
 		cmd->primCount = n;
-		glFlushMappedNamedBufferRange(m_bufs[0], (i * sizeof(DrawElementsIndirectCommand)) + offsetof(DrawElementsIndirectCommand, primCount), sizeof(GLuint));
+		glFlushMappedNamedBufferRange(m_bufs[4], (i * sizeof(DrawElementsIndirectCommand)) + offsetof(DrawElementsIndirectCommand, primCount), sizeof(GLuint));
 	}
 }
 
@@ -257,6 +258,8 @@ void RendererGL43::present(const Camera *cam) noexcept{
 
 	m_gbuffer->use(RenderFramebuffer::Mode::read);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, curFb);
+
+	glViewport(0, 0, oldW, oldH);
 
 	glBlitFramebuffer(0, 0, w, h, 0, 0, oldW, oldH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }

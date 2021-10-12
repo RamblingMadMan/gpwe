@@ -45,6 +45,7 @@ namespace gpwe{
 	void logLn(LogKind kind, String &&fmtStr, Args &&... args){
 		auto res = fmt::format(std::forward<String>(fmtStr), std::forward<Args>(args)...);
 		log<Print>(kind, "{}\n", res);
+		std::fflush(stdout);
 	}
 
 	template<bool Print = true, typename String, typename ... Args>

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <functional>
 
+#include "Allocator.hpp"
+
 namespace gpwe{
 	class Camera;
 	class Renderer;
@@ -20,13 +22,18 @@ namespace gpwe::resource{
 namespace gpwe::sys{
 	using PresentFn = std::function<void()>;
 
-	void init(
-		int argc, char *argv[],
-		input::Manager *inputManager_,
-		std::uint16_t w, std::uint16_t h
-	);
+	void initSys(int argc, char *argv[], input::Manager *inputManager_);
+	void initRenderer(std::uint16_t w, std::uint16_t h, void *arg = nullptr);
+	void initApp();
 
-	int exec(PresentFn presentFn, void *rendererArg);
+	void tick(float dt);
+
+	namespace detail{
+		void setRunning(bool val);
+	}
+
+	int exec(PresentFn presentFn);
+
 	void exit();
 
 	void *alloc(std::size_t n);

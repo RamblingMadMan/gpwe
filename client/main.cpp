@@ -208,7 +208,9 @@ int main(int argc, char *argv[]){
 	using Proc = void(*)();
 	auto loadGLFn = +[](const char *name){ return (Proc)SDL_GL_GetProcAddress(name); };
 
-	sys::init(argc, argv, &inputManager, 1280, 720);
+	sys::initSys(argc, argv, &inputManager);
+	sys::initRenderer(1280, 720, (void*)loadGLFn);
+	sys::initApp();
 
-	return sys::exec([]{ SDL_GL_SwapWindow(gpweWin); }, reinterpret_cast<void*>(loadGLFn));
+	return sys::exec(std::bind(SDL_GL_SwapWindow, gpweWin));
 }
