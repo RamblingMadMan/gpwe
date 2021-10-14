@@ -1,6 +1,7 @@
 find_package(LibMagic REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(FreeImage REQUIRED)
+find_package(Bullet REQUIRED)
 
 set(
 	GPWE_BASE_SOURCES
