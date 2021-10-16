@@ -1,14 +1,20 @@
 # Plugins
 
+Plugins are shared libraries that implement new features and/or core functionality of the engine.
+
 ## Creating a plugin
 
-First make sure you have a basic CMake project set up.
+First make sure you have a basic CMake project set up, then create a new target using the function `gpwe_add_plugin`.
 
-Then we create a new target using the function `gpwe_add_plugin`.
-
-Here's an example of a renderer plugin:
+Here's an example `CMakeLists.txt` for a renderer plugin:
 
 ```cmake
+cmake_minimum_required(VERSION 3.14)
+
+project(my-renderer VERSION 6.9.420 LANGUAGES CXX)
+
+add_subdirectory(gpwe)
+
 set(
 	RENDERER_NULL_SOURCES
 	RendererNull.hpp
@@ -20,7 +26,7 @@ gpwe_add_plugin(renderer-null ${RENDERER_NULL_SOURCES})
 
 ## Embedding resources in a plugin
 
-Resources can be embedded in the final binary (shared library) of a plugin using `plugin_add_resources`.
+Resources can be embedded in the final binary of a plugin using `plugin_add_resources`.
 
 Once a file with the relative path `<file>` is added to a plugin it is made available through the header `<file>.hpp`.
 

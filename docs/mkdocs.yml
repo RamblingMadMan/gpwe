@@ -1,4 +1,12 @@
 site_name: GPWE
+site_description: General Purpose World Engine Documentation
+site_author: Keith Hammond (Ham/RamblingMadMan)
+
+nav:
+  - index.md
+  - getting-started.md
+  - apps.md
+  - plugins.md
 
 theme:
   name: mkdocs

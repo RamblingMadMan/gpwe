@@ -8,3 +8,7 @@ The engine has a modular design with 'plugins' handling most of the vital functi
 
 - OpenGL 4.3 Renderer
 - Bullet Physics
+
+## Source Code
+
+The entire source code is available for free under the GPLv3 license on the [GitHub Repo](https://github.com/RamblingMadMan/gpwe).
