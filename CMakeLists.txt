@@ -28,15 +28,18 @@ set(GPWE_INCLUDE_DIRS ${GPWE_INCLUDE_DIR} ${PROJECT_BINARY_DIR}/include)
 set(
 	GPWE_INCLUDES
 	${PROJECT_BINARY_DIR}/include/gpwe/config.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/meta.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/log.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Version.hpp
-	${GPWE_INCLUDE_DIR}/gpwe/sys.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Allocator.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Manager.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/sys.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/embed.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Ticker.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Vector.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/List.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Map.hpp
-	${GPWE_INCLUDE_DIR}/gpwe/String.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/Str.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/input.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/resource.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Octree.hpp
@@ -44,6 +47,7 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/Shape.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Texture.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Renderer.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/physics.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/App.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/World.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Font.hpp
@@ -52,6 +56,9 @@ set(
 configure_file(${GPWE_INCLUDE_DIR}/gpwe/config.hpp.in include/gpwe/config.hpp)
 
 # Dependencies
+
+set(CMAKE_POLICY_DEFAULT_CMP0072 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
 add_library(plf-list INTERFACE)
 
@@ -80,10 +87,47 @@ set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "")
 set(ASSIMP_INSTALL OFF CACHE BOOL "")
 add_subdirectory(deps/assimp EXCLUDE_FROM_ALL)
 
+set(USE_GRAPHICAL_BENCHMARK OFF CACHE BOOL "")
+set(BULLET2_MULTITHREADING ON CACHE BOOL "")
+set(BULLET2_USE_OPEN_MP_MULTITHREADING ON CACHE BOOL "")
+add_subdirectory(deps/bullet3 EXCLUDE_FROM_ALL)
+
+set_target_properties(
+	Bullet3Collision PROPERTIES
+	POSITION_INDEPENDENT_CODE ON
+)
+
+set_target_properties(
+	Bullet3Dynamics PROPERTIES
+	POSITION_INDEPENDENT_CODE ON
+)
+
+add_library(Bullet::LinearMath INTERFACE IMPORTED)
+
+target_link_libraries(Bullet::LinearMath INTERFACE LinearMath)
+
+target_include_directories(
+	Bullet::LinearMath INTERFACE
+	deps/bullet3/src
+)
+
+add_library(Bullet::Bullet3 INTERFACE IMPORTED)
+
+target_link_libraries(
+	Bullet::Bullet3 INTERFACE
+	Bullet::LinearMath
+	Bullet3Common
+	Bullet3Collision
+	Bullet3Dynamics
+	Bullet3Geometry
+	#Bullet3OpenCL
+)
+
 # GPWE targets
 
 add_subdirectory(base)
 add_subdirectory(renderer-gl43)
+add_subdirectory(physics-bullet3)
 
 if(GPWE_BUILD_TESTGAME)
 	add_subdirectory(testgame)

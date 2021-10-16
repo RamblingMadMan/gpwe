@@ -14,6 +14,9 @@
 
 #include "shaders.hpp"
 
+#include "shaders/fullbright.vert.hpp"
+#include "shaders/fullbright.frag.hpp"
+
 using namespace gpwe;
 using namespace gl;
 
@@ -186,13 +189,19 @@ RendererGL43::RendererGL43(void *getProcFn){
 	logLn("Done");
 
 	log("{:<30}", "Compiling shaders...");
-	m_vertFullbright = createProgram(RenderProgram::Kind::vertex, vertFullbright);
+
+	m_vertFullbright = createProgram(RenderProgram::Kind::vertex, embed::shaders_fullbright_vert_str());
 	if(!m_vertFullbright){
 		logError("Error\n");
 		throw std::runtime_error("Error compiling fullbright vertex shader");
 	}
 
-	m_fragFullbright = createProgram(RenderProgram::Kind::fragment, fragFullbright);
+	m_fragFullbright = createProgram(RenderProgram::Kind::fragment, embed::shaders_fullbright_frag_str());
+	if(!m_vertFullbright){
+		logError("Error\n");
+		throw std::runtime_error("Error compiling fullbright fragment shader");
+	}
+
 	m_pipelineFullbright = createPipeline({ m_vertFullbright, m_fragFullbright });
 	logLn("Done");
 

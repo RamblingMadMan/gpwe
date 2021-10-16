@@ -15,10 +15,10 @@ set_target_properties(
 
 target_include_directories(gpwe-client PRIVATE ${SDL2_INCLUDE_DIRS})
 
-target_link_libraries(gpwe-client PRIVATE ${SDL2_LIBRARIES})
+target_link_libraries(gpwe-client PRIVATE ${SDL2_LIBRARIES} GPWE::Base)
 
-gpwe_embed_renderer(gpwe-client gpwe-renderer-gl43)
+gpwe_embed_plugins(gpwe-client renderer-gl43 physics-bullet3)
 
 if(GPWE_BUILD_TESTGAME)
-	gpwe_embed_app(gpwe-client gpwe-app-test)
+	gpwe_embed_app(gpwe-client app-test)
 endif()

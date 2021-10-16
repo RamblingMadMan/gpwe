@@ -2,16 +2,20 @@ set(
 	GPWE_RENDERER_GL43_SOURCES
 	shaders.hpp
 	RendererGL43.hpp
+	RendererGL43.cpp
 	RenderProgramGL43.cpp
 	RenderPipelineGL43.cpp
 	RenderFramebufferGL43.cpp
-	RendererGL43.cpp
 )
 
-add_gpwe_renderer(gpwe-renderer-gl43 ${GPWE_RENDERER_GL43_SOURCES})
+set(
+	GPWE_RENDERER_GL43_RESOURCES
+	shaders/fullbright.vert
+	shaders/fullbright.frag
+)
 
-target_link_libraries(gpwe-renderer-gl43 PRIVATE glbinding glbinding-aux)
+add_gpwe_plugin(renderer-gl43 ${GPWE_RENDERER_GL43_SOURCES})
 
-function(gpwe_embed_renderer_gl43 tgt)
-	gpwe_embed_renderer(${tgt} gpwe-renderer-gl43)
-endfunction()
+plugin_add_resources(renderer-gl43 ${GPWE_RENDERER_GL43_RESOURCES})
+
+plugin_link_libraries(renderer-gl43 glbinding glbinding-aux)

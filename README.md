@@ -31,14 +31,15 @@ GPWE is an engine designed primarily for creating games and 3D environments, but
 <div align="center">
 
 | Dependency | Included |
-|:-----------|:--------:|
-| SDL2       | ❌ |
-| libmagic   | ❌ |
-| Freetype   | ❌ |
-| FreeImage  | ❌ |
-| Assimp     | ✅ |
-| glm        | ✅ |
-| glbinding  | ✅ |
+|:---------------|:--------:|
+| SDL2           | ❌ |
+| libmagic       | ❌ |
+| Freetype       | ❌ |
+| FreeImage      | ❌ |
+| Bullet Physics | ✅ |
+| Assimp         | ✅ |
+| glm            | ✅ |
+| glbinding      | ✅ |
 
 </div>
 

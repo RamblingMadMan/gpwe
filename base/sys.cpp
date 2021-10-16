@@ -68,13 +68,18 @@ FT_Library gpweFtLib = nullptr;
 magic_t gpweMagic = nullptr;
 
 static void *gpweAppLib = nullptr;
+
+static void *gpwePhysicsLib = nullptr;
+
 static void *gpweRendererLib = nullptr;
 static void *gpweRendererArg = nullptr;
 
-sys::CreateAppFn gpweCreateApp;
-sys::CreateRendererFn gpweCreateRenderer;
+sys::CreateAppFn gpweCreateApp = nullptr;
+sys::CreateRendererFn gpweCreateRenderer = nullptr;
+sys::CreatePhysicsFn gpweCreatePhysics = nullptr;
 
-input::Manager *gpweInputManager;
+physics::Manager *gpwePhysicsManager = nullptr;
+input::Manager *gpweInputManager = nullptr;
 resource::Manager gpweResourceManager;
 
 UniquePtr<Renderer> gpweRenderer;

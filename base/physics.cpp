@@ -1,8 +1,7 @@
-#include <type_traits>
-
-#include "gpwe/Renderer.hpp"
+#include "gpwe/physics.hpp"
 
 using namespace gpwe;
+using namespace gpwe::physics;
 
 template<class Iter, class T>
 inline Iter binary_find(Iter begin, Iter end, T val){
@@ -65,17 +64,17 @@ inline bool eraseUnique(List<UniquePtr<T>> &xs, T *ptr){
 	return false;
 }
 
-RenderGroup *Renderer::createGroup(std::uint32_t numShapes, const VertexShape **shapes){ return insertUnique(m_groups, doCreateGroup(numShapes, shapes)); }
-bool Renderer::destroyGroup(RenderGroup *group){ return eraseUnique(m_groups, group); }
-
-RenderProgram *Renderer::createProgram(RenderProgram::Kind kind, std::string_view src){ return insertUnique(m_progs, doCreateProgram(kind, src)); }
-bool Renderer::destroyProgram(RenderProgram *program){ return eraseUnique(m_progs, program); }
-
-RenderPipeline *Renderer::createPipeline(const Vector<RenderProgram*> &programs){ return insertUnique(m_pipelines, doCreatePipeline(programs)); }
-bool Renderer::destroyPipeline(RenderPipeline *pipeline){ return eraseUnique(m_pipelines, pipeline); }
-
-RenderFramebuffer *Renderer::createFramebuffer(std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments){
-	return insertUnique(m_fbs, doCreateFramebuffer(w, h, attachments));
+void Manager::update(float dt){
+	for(auto &&world : m_worlds){
+		world->update(dt);
+	}
 }
 
-bool Renderer::destroyFramebuffer(RenderFramebuffer *fb){ return eraseUnique(m_fbs, fb); }
+World *Manager::createWorld(){ return insertUnique(m_worlds, doCreateWorld()); }
+bool Manager::destroyWorld(World *world){ return eraseUnique(m_worlds, world); }
+
+BodyShape *World::createBodyShape(const Shape *shape){ return insertUnique(m_shapes, doCreateBodyShape(shape)); }
+bool World::destroyBodyShape(BodyShape *bodyShape){ return eraseUnique(m_shapes, bodyShape); }
+
+Body *World::createBody(const BodyShape *bodyShape){ return insertUnique(m_bodies, doCreateBody(bodyShape)); }
+bool World::destroyBody(Body *body){ return eraseUnique(m_bodies, body); }

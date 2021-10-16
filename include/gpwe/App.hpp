@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "gpwe/Version.hpp"
-#include "gpwe/String.hpp"
+#include "gpwe/Str.hpp"
 
 namespace gpwe{
 	class App{

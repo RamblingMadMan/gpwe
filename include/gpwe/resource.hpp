@@ -4,7 +4,7 @@
 #include <memory>
 #include <filesystem>
 
-#include "String.hpp"
+#include "Str.hpp"
 #include "Map.hpp"
 #include "Shape.hpp"
 #include "Texture.hpp"

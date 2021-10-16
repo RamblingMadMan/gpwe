@@ -1,0 +1,17 @@
+#ifndef GPWE_${RES_NAME}_HPP
+#define GPWE_${RES_NAME}_HPP 1
+
+#include <cstddef>
+
+#include "gpwe/Str.hpp"
+
+extern "C" const char _binary_${RES_NAME}_start[];
+extern "C" const char _binary_${RES_NAME}_end[];
+
+namespace gpwe::embed{
+	inline const char *${RES_NAME}_data() noexcept{ return _binary_${RES_NAME}_start; }
+	inline std::size_t ${RES_NAME}_size() noexcept{ return _binary_${RES_NAME}_end - _binary_${RES_NAME}_start; }
+	inline StrView ${RES_NAME}_str() noexcept{ return StrView(${RES_NAME}_data(), ${RES_NAME}_size()); }
+}
+
+#endif // !GPWE_${RES_NAME}_HPP
