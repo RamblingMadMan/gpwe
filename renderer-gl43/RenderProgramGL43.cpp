@@ -6,8 +6,8 @@ using namespace gpwe;
 using namespace gl;
 
 namespace {
-	GLenum shaderKindToGL(RenderProgram::Kind kind){
-		using Kind = RenderProgram::Kind;
+	GLenum shaderKindToGL(render::Program::Kind kind){
+		using Kind = render::Program::Kind;
 		switch(kind){
 			case Kind::vertex: return GL_VERTEX_SHADER;
 			case Kind::geometry: return GL_GEOMETRY_SHADER;

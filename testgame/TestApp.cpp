@@ -1,6 +1,7 @@
 #include "gpwe/input.hpp"
 #include "gpwe/sys.hpp"
 #include "gpwe/resource.hpp"
+#include "gpwe/render.hpp"
 #include "gpwe/log.hpp"
 #include "gpwe/Shape.hpp"
 
@@ -12,7 +13,11 @@ using namespace gpwe;
 
 GPWE_APP(TestApp, "TESTGAME", "RamblingMad", 0, 0, 0)
 
-TestApp::TestApp(){
+TestApp::TestApp(){}
+
+TestApp::~TestApp(){}
+
+void TestApp::init(){
 	auto resources = sys::resourceManager();
 	auto inputs = sys::inputManager();
 
@@ -20,12 +25,12 @@ TestApp::TestApp(){
 
 	shapes::Cube cube(2.f);
 
-	cubeGroup = sys::renderer()->createGroup(&cube);
+	cubeGroup = sys::renderManager()->createGroup(&cube);
 	cubeGroup->setNumInstances(0);
 
 	auto guyMdl = resources->openModel("/Assets/Models/SphereGuy.fbx");
 	if(guyMdl){
-		guyGroup = sys::renderer()->createGroup(&guyMdl->meshes()[0]);
+		guyGroup = sys::renderManager()->createGroup(&guyMdl->meshes()[0]);
 	}
 	else{
 		logErrorLn("could not open '/Assets/Models/SphereGuy.fbx'");
@@ -99,8 +104,6 @@ TestApp::TestApp(){
 		rot.y += yrel;
 	});
 }
-
-TestApp::~TestApp(){}
 
 void TestApp::update(float dt){
 	auto cam = sys::camera();

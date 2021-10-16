@@ -64,17 +64,8 @@ inline bool eraseUnique(List<UniquePtr<T>> &xs, T *ptr){
 	return false;
 }
 
-void Manager::update(float dt){
-	for(auto &&world : m_worlds){
+void physics::Manager::update(float dt){
+	for(auto &&world : managed<World>()){
 		world->update(dt);
 	}
 }
-
-World *Manager::createWorld(){ return insertUnique(m_worlds, doCreateWorld()); }
-bool Manager::destroyWorld(World *world){ return eraseUnique(m_worlds, world); }
-
-BodyShape *World::createBodyShape(const Shape *shape){ return insertUnique(m_shapes, doCreateBodyShape(shape)); }
-bool World::destroyBodyShape(BodyShape *bodyShape){ return eraseUnique(m_shapes, bodyShape); }
-
-Body *World::createBody(const BodyShape *bodyShape){ return insertUnique(m_bodies, doCreateBody(bodyShape)); }
-bool World::destroyBody(Body *body){ return eraseUnique(m_bodies, body); }

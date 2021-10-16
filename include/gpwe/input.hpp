@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <map>
 
-#include "List.hpp"
+#include "Manager.hpp"
 
 namespace gpwe::input{
 	class System{
@@ -140,7 +140,7 @@ namespace gpwe::input{
 			std::uint32_t m_id;
 	};
 
-	class Manager{
+	class Manager: public gpwe::Manager<Manager>{
 		public:
 			using PumpEventFn = std::function<void()>;
 

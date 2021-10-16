@@ -3,9 +3,12 @@
 
 #include <memory>
 
-#include "sys.hpp"
-
 namespace gpwe{
+	namespace sys{
+		void *alloc(std::size_t n);
+		void free(void *ptr);
+	}
+
 	template<typename T>
 	class Allocator{
 		public:

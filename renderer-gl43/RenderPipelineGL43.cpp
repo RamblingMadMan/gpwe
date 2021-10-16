@@ -6,8 +6,8 @@ using namespace gl;
 using namespace gpwe;
 
 namespace {
-	UseProgramStageMask shaderKindToGLBit(RenderProgram::Kind kind){
-		using Kind = RenderProgram::Kind;
+	UseProgramStageMask shaderKindToGLBit(render::Program::Kind kind){
+		using Kind = render::Program::Kind;
 		switch(kind){
 			case Kind::vertex: return GL_VERTEX_SHADER_BIT;
 			case Kind::geometry: return GL_GEOMETRY_SHADER_BIT;

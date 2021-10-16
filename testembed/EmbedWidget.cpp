@@ -17,6 +17,7 @@ GLProc getGLProc(const char *name){ return gpweCtx->getProcAddress(name); }
 void EmbedWidget::initializeGL(){
 	gpweCtx = context();
 	gpwe::sys::setRendererArg(reinterpret_cast<void*>(getGLProc));
+
 	gpwe::sys::initRenderer(width(), height());
 	gpwe::sys::initApp();
 

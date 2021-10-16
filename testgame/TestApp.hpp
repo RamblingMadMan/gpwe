@@ -2,18 +2,20 @@
 #define TESTGAME_TESTAPP_HPP 1
 
 #include "gpwe/Camera.hpp"
-#include "gpwe/Renderer.hpp"
-#include "gpwe/App.hpp"
+#include "gpwe/render.hpp"
+#include "gpwe/app.hpp"
 
-class TestApp: public gpwe::App{
+class TestApp: public gpwe::app::Manager{
 	public:
 		TestApp();
 		~TestApp();
 
+		void init() override;
+
 		void update(float dt) override;
 
 	private:
-		gpwe::RenderGroup *cubeGroup, *guyGroup;
+		gpwe::render::Group *cubeGroup, *guyGroup;
 		bool rotateCam = false;
 		glm::vec3 rot = { 0.f, 0.f, 0.f }, movement = { 0.f, 0.f, 0.f };
 

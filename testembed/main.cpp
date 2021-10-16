@@ -1,12 +1,12 @@
 #include "gpwe/sys.hpp"
 #include "gpwe/input.hpp"
-#include "gpwe/App.hpp"
+#include "gpwe/app.hpp"
 
 #include <QApplication>
 
 #include "MainWindow.hpp"
 
-class TestApp: public gpwe::App{
+class TestApp: public gpwe::app::Manager{
 	public:
 		TestApp(){}
 		~TestApp(){}
@@ -25,10 +25,11 @@ class InputManager: public gpwe::input::Manager{
 };
 
 int main(int argc, char *argv[]){
-	InputManager input;
+	gpwe::sys::setAppManager(gpwe::makeUnique<TestApp>());
+	gpwe::sys::setInputManager(gpwe::makeUnique<InputManager>());
 
-	gpwe::sys::setCreateAppFn(gpweCreateApp);
-	gpwe::sys::initSys(argc, argv, &input);
+	gpwe::sys::initSys(argc, argv);
+	gpwe::sys::initInput();
 
 	QApplication::setApplicationName("GPWE Embed Test");
 	QApplication::setOrganizationName("Hamsmith");

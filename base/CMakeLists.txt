@@ -12,7 +12,6 @@ set(
 	physics.cpp
 	Camera.cpp
 	Shape.cpp
-	Renderer.cpp
 	Font.cpp
 	World.cpp
 )

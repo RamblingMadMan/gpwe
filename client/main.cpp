@@ -8,13 +8,13 @@
 #include "SDL.h"
 
 #include "gpwe/config.hpp"
-#include "gpwe/input.hpp"
-#include "gpwe/sys.hpp"
 #include "gpwe/log.hpp"
-#include "gpwe/App.hpp"
+#include "gpwe/sys.hpp"
+#include "gpwe/input.hpp"
+#include "gpwe/render.hpp"
+#include "gpwe/app.hpp"
 #include "gpwe/Camera.hpp"
 #include "gpwe/Shape.hpp"
-#include "gpwe/Renderer.hpp"
 
 using namespace gpwe;
 
@@ -208,8 +208,11 @@ int main(int argc, char *argv[]){
 	using Proc = void(*)();
 	auto loadGLFn = +[](const char *name){ return (Proc)SDL_GL_GetProcAddress(name); };
 
-	sys::initSys(argc, argv, &inputManager);
+	sys::setInputManager(gpwe::makeUnique<SDLInputManager>());
 	sys::setRendererArg((void*)loadGLFn);
+
+	sys::initSys(argc, argv);
+	sys::initInput();
 	sys::initRenderer(1280, 720);
 	sys::initApp();
 

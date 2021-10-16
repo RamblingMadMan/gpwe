@@ -1,10 +1,10 @@
 ﻿#ifndef GPWE_RENDERER_GL43_HPP
 #define GPWE_RENDERER_GL43_HPP 1
 
-#include "gpwe/Renderer.hpp"
+#include "gpwe/render.hpp"
 
 namespace gpwe{
-	class RenderGroupGL43: public RenderGroup{
+	class RenderGroupGL43: public render::Group{
 		public:
 			explicit RenderGroupGL43(std::uint32_t numShapes, const VertexShape **shapes, std::uint32_t n = 1);
 			~RenderGroupGL43();
@@ -26,7 +26,7 @@ namespace gpwe{
 			friend class RendererGL43;
 	};
 
-	class RenderProgramGL43: public RenderProgram{
+	class RenderProgramGL43: public render::Program{
 		public:
 			RenderProgramGL43(Kind kind_, std::string_view src);
 			~RenderProgramGL43();
@@ -42,7 +42,7 @@ namespace gpwe{
 			friend class RendererGL43;
 	};
 
-	class RenderPipelineGL43: public RenderPipeline{
+	class RenderPipelineGL43: public render::Pipeline{
 		public:
 			RenderPipelineGL43(const Vector<RenderProgramGL43*> &progs);
 			~RenderPipelineGL43();
@@ -56,9 +56,9 @@ namespace gpwe{
 			Vector<RenderProgramGL43*> m_progs;
 	};
 
-	class RenderFramebufferGL43: public RenderFramebuffer{
+	class RenderFramebufferGL43: public render::Framebuffer{
 		public:
-			RenderFramebufferGL43(std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments);
+			RenderFramebufferGL43(std::uint16_t w, std::uint16_t h, const Vector<render::Texture::Kind> &attachments);
 			~RenderFramebufferGL43();
 
 			void use(Mode mode) noexcept override;
@@ -68,41 +68,47 @@ namespace gpwe{
 			std::uint32_t handle() const noexcept{ return m_handle; }
 
 			std::uint32_t numAttachments() const noexcept override{ return m_attachments.size(); }
-			Texture::Kind attachmentKind(std::uint32_t idx) const noexcept override{ return m_attachments[idx]; }
+			render::TextureKind attachmentKind(std::uint32_t idx) const noexcept override{ return m_attachments[idx]; }
 			std::uint32_t attachmentHandle(std::uint32_t idx) const noexcept{ return m_texs[idx]; }
 
 		private:
 			std::uint16_t m_w, m_h;
 			std::uint32_t m_handle;
 			Vector<std::uint32_t> m_texs;
-			Vector<Texture::Kind> m_attachments;
+			Vector<render::TextureKind> m_attachments;
 	};
 
 	using GLProc = void(*)();
 	using GLGetProcFn = GLProc(*)(const char*);
 
-	class RendererGL43: public Renderer{
+	class RendererGL43: public render::Manager{
 		public:
-			RendererGL43(void *getProcFn);
+			RendererGL43();
 			~RendererGL43();
+
+			void init() override;
 
 			void present(const Camera *cam) noexcept override;
 
 		protected:
-			UniquePtr<RenderGroup> doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes) override;
+			UniquePtr<render::Group> doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes) override;
 
-			UniquePtr<RenderProgram> doCreateProgram(RenderProgram::Kind kind, std::string_view src) override;
+			UniquePtr<render::Texture> doCreateTexture(std::uint16_t w, std::uint16_t h, render::TextureKind, const void *pixels) override{
+				return nullptr;
+			}
 
-			UniquePtr<RenderPipeline> doCreatePipeline(const Vector<RenderProgram*> &progs) override;
+			UniquePtr<render::Program> doCreateProgram(render::ProgramKind kind, std::string_view src) override;
 
-			UniquePtr<RenderFramebuffer> doCreateFramebuffer(
-				std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments
+			UniquePtr<render::Pipeline> doCreatePipeline(const Vector<render::Program*> &progs) override;
+
+			UniquePtr<render::Framebuffer> doCreateFramebuffer(
+				std::uint16_t w, std::uint16_t h, const Vector<render::TextureKind> &attachments
 			) override;
 
 		private:
-			RenderFramebuffer *m_gbuffer;
-			RenderProgram *m_vertFullbright, *m_fragFullbright;
-			RenderPipeline *m_pipelineFullbright;
+			render::Framebuffer *m_gbuffer;
+			render::Program *m_vertFullbright, *m_fragFullbright;
+			render::Pipeline *m_pipelineFullbright;
 	};
 }
 

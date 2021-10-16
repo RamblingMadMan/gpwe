@@ -165,9 +165,13 @@ void gpweGLMessageCB(
 	);
 }
 
-RendererGL43::RendererGL43(void *getProcFn){
+RendererGL43::RendererGL43(){}
+
+RendererGL43::~RendererGL43(){}
+
+void RendererGL43::init(){
 	log("{:<30}", "Initializing glbinding...");
-	glbinding::initialize(reinterpret_cast<GLGetProcFn>(getProcFn));
+	glbinding::initialize(reinterpret_cast<GLGetProcFn>(m_arg));
 	logLn("Done");
 
 #ifndef NDEBUG
@@ -177,32 +181,32 @@ RendererGL43::RendererGL43(void *getProcFn){
 #endif
 
 	log("{:<30}", "Creating framebuffer...");
-	m_gbuffer = createFramebuffer(
+	m_gbuffer = create<render::Framebuffer>(
 		1280, 720,
-		{
-			Texture::Kind::d24s8, // depth+stencil
-			Texture::Kind::rgba8, // diffuse/albedo
-			Texture::Kind::rgb16f, // normals
-			Texture::Kind::rgb10a2 // hdr/lighting
+		Vector<render::TextureKind>{
+			render::TextureKind::d24s8, // depth+stencil
+			render::TextureKind::rgba8, // diffuse/albedo
+			render::TextureKind::rgb16f, // normals
+			render::TextureKind::rgb10a2 // hdr/lighting
 		}
 	);
 	logLn("Done");
 
 	log("{:<30}", "Compiling shaders...");
 
-	m_vertFullbright = createProgram(RenderProgram::Kind::vertex, embed::shaders_fullbright_vert_str());
+	m_vertFullbright = create<render::Program>(render::ProgramKind::vertex, embed::shaders_fullbright_vert_str());
 	if(!m_vertFullbright){
 		logError("Error\n");
 		throw std::runtime_error("Error compiling fullbright vertex shader");
 	}
 
-	m_fragFullbright = createProgram(RenderProgram::Kind::fragment, embed::shaders_fullbright_frag_str());
+	m_fragFullbright = create<render::Program>(render::ProgramKind::fragment, embed::shaders_fullbright_frag_str());
 	if(!m_vertFullbright){
 		logError("Error\n");
 		throw std::runtime_error("Error compiling fullbright fragment shader");
 	}
 
-	m_pipelineFullbright = createPipeline({ m_vertFullbright, m_fragFullbright });
+	m_pipelineFullbright = create<render::Pipeline>(Vector<render::Program*>{ m_vertFullbright, m_fragFullbright });
 	logLn("Done");
 
 	logLn("");
@@ -210,9 +214,6 @@ RendererGL43::RendererGL43(void *getProcFn){
 	logLn("OpenGL Version: {}", (const char*)glGetString(GL_VERSION));
 
 	logLn("");
-}
-
-RendererGL43::~RendererGL43(){
 }
 
 void RendererGL43::present(const Camera *cam) noexcept{
@@ -261,11 +262,11 @@ void RendererGL43::present(const Camera *cam) noexcept{
 
 	m_pipelineFullbright->use();
 
-	for(auto &&group : m_groups){
+	for(auto &&group : managed<render::Group>()){
 		group->draw();
 	}
 
-	m_gbuffer->use(RenderFramebuffer::Mode::read);
+	m_gbuffer->use(render::Framebuffer::Mode::read);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, curFb);
 
 	glViewport(0, 0, oldW, oldH);
@@ -273,15 +274,15 @@ void RendererGL43::present(const Camera *cam) noexcept{
 	glBlitFramebuffer(0, 0, w, h, 0, 0, oldW, oldH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-UniquePtr<RenderGroup> RendererGL43::doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes){
+UniquePtr<render::Group> RendererGL43::doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes){
 	return makeUnique<RenderGroupGL43>(numShapes, shapes);
 }
 
-UniquePtr<RenderProgram> RendererGL43::doCreateProgram(RenderProgram::Kind kind, std::string_view src){
+UniquePtr<render::Program> RendererGL43::doCreateProgram(render::ProgramKind kind, std::string_view src){
 	return makeUnique<RenderProgramGL43>(kind, src);
 }
 
-UniquePtr<RenderPipeline> RendererGL43::doCreatePipeline(const Vector<RenderProgram*> &progs){
+UniquePtr<render::Pipeline> RendererGL43::doCreatePipeline(const Vector<render::Program*> &progs){
 	Vector<RenderProgramGL43*> glProgs;
 	glProgs.reserve(progs.size());
 
@@ -298,8 +299,8 @@ UniquePtr<RenderPipeline> RendererGL43::doCreatePipeline(const Vector<RenderProg
 	return makeUnique<RenderPipelineGL43>(glProgs);
 }
 
-UniquePtr<RenderFramebuffer> RendererGL43::doCreateFramebuffer(
-	std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments
+UniquePtr<render::Framebuffer> RendererGL43::doCreateFramebuffer(
+	std::uint16_t w, std::uint16_t h, const Vector<render::TextureKind> &attachments
 ){
 	return makeUnique<RenderFramebufferGL43>(w, h, attachments);
 }

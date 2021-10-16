@@ -2,7 +2,9 @@ set(
 	GPWE_DOCS_SOURCES
 	mkdocs.yml
 	docs/index.md
-	docs/Plugins.md
+	docs/getting-started.md
+	docs/apps.md
+	docs/plugins.md
 	docs/style/main.css
 )
 

@@ -14,7 +14,7 @@
 using namespace gpwe;
 using namespace gpwe::physics::bullet3;
 
-UniquePtr<physics::World> Manager::doCreateWorld(){
+UniquePtr<physics::World> physics::bullet3::Manager::doCreateWorld(){
 	return makeUnique<World>();
 }
 

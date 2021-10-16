@@ -1,7 +1,7 @@
 #ifndef GPWE_PHYSICS_HPP
 #define GPWE_PHYSICS_HPP 1
 
-#include "List.hpp"
+#include "Manager.hpp"
 #include "Shape.hpp"
 
 namespace gpwe::physics{
@@ -9,54 +9,47 @@ namespace gpwe::physics{
 	class Body;
 	class World;
 
-	class Manager{
+	class Manager: public gpwe::Manager<Manager, World>{
 		public:
 			virtual ~Manager() = default;
 
 			void update(float dt);
 
-			World *createWorld();
-			bool destroyWorld(World *world);
-
 		protected:
 			virtual UniquePtr<World> doCreateWorld() = 0;
 
-			gpwe::List<UniquePtr<BodyShape>> m_shapes;
-			gpwe::List<UniquePtr<World>> m_worlds;
+			friend class World;
 	};
 
-	class BodyShape{
-		public:
-			virtual ~BodyShape() = default;
-	};
-
-	class Body{
-		public:
-			virtual ~Body() = default;
-
-			virtual float mass() const noexcept = 0;
-			virtual glm::vec3 position() const noexcept = 0;
-	};
-
-	class World{
+	class World :
+		public Managed<Manager, &Manager::doCreateWorld>,
+		public gpwe::Manager<BodyShape, Body>
+	{
 		public:
 			virtual ~World() = default;
 
 			virtual void update(float dt) = 0;
-
-			BodyShape *createBodyShape(const Shape *shape);
-			bool destroyBodyShape(BodyShape *bodyShape);
-
-			Body *createBody(const BodyShape *bodyShape);
-			bool destroyBody(Body *body);
 
 		protected:
 			virtual UniquePtr<BodyShape> doCreateBodyShape(const Shape *shape) = 0;
 			virtual UniquePtr<Body> doCreateBody(const BodyShape *bodyShape) = 0;
 
 		private:
-			gpwe::List<UniquePtr<BodyShape>> m_shapes;
-			gpwe::List<UniquePtr<Body>> m_bodies;
+			friend class BodyShape;
+			friend class Body;
+	};
+
+	class BodyShape: public Managed<World, &World::doCreateBodyShape>{
+		public:
+			virtual ~BodyShape() = default;
+	};
+
+	class Body: public Managed<World, &World::doCreateBody>{
+		public:
+			virtual ~Body() = default;
+
+			virtual float mass() const noexcept = 0;
+			virtual glm::vec3 position() const noexcept = 0;
 	};
 }
 

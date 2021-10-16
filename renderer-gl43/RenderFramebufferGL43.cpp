@@ -6,8 +6,8 @@ using namespace gl;
 using namespace gpwe;
 
 namespace {
-	constexpr GLenum fbModeToGL(RenderFramebuffer::Mode mode) noexcept{
-		using Mode = RenderFramebuffer::Mode;
+	constexpr GLenum fbModeToGL(render::Framebuffer::Mode mode) noexcept{
+		using Mode = render::Framebuffer::Mode;
 		switch(mode){
 			case Mode::read: return GL_READ_FRAMEBUFFER;
 			case Mode::write: return GL_DRAW_FRAMEBUFFER;
@@ -15,8 +15,8 @@ namespace {
 		}
 	}
 
-	constexpr GLenum textureKindToGLFormat(Texture::Kind kind) noexcept{
-		using Kind = Texture::Kind;
+	constexpr GLenum textureKindToGLFormat(render::Texture::Kind kind) noexcept{
+		using Kind = render::Texture::Kind;
 		switch(kind){
 #define CASE_RGBA(n)\
 			case Kind::r##n: return GL_R##n;\
@@ -56,8 +56,8 @@ namespace {
 		}
 	}
 
-	constexpr GLenum textureKindToGLAttachment(Texture::Kind kind) noexcept{
-		using Kind = Texture::Kind;
+	constexpr GLenum textureKindToGLAttachment(render::Texture::Kind kind) noexcept{
+		using Kind = render::Texture::Kind;
 		switch(kind){
 			case Kind::d16:
 			case Kind::d32:
@@ -73,7 +73,7 @@ namespace {
 }
 
 RenderFramebufferGL43::RenderFramebufferGL43(
-	std::uint16_t w, std::uint16_t h, const Vector<Texture::Kind> &attachments
+	std::uint16_t w, std::uint16_t h, const Vector<render::Texture::Kind> &attachments
 )
 	: m_w(w), m_h(h), m_attachments(attachments)
 {

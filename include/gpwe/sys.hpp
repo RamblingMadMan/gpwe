@@ -4,11 +4,10 @@
 #include <cstdint>
 #include <functional>
 
+#include "Allocator.hpp"
+
 namespace gpwe{
-	// TODO: put these in respective namespaces as 'Manager's
-	class Renderer;
 	class Camera;
-	class App;
 }
 
 namespace gpwe::app{
@@ -40,21 +39,18 @@ namespace gpwe::sys{
 
 	using PresentFn = std::function<void()>;
 
+	template<typename T>
+	using CreateManagerFn = T*(*)();
+
 	void setRendererArg(void *val = nullptr);
 
-	using CreateAppFn = App*(*)();
-	using CreateRendererFn = Renderer*(*)(void*);
-	using CreatePhysicsFn = PhysicsManager*(*)(void*);
+	void setRenderManager(UniquePtr<RenderManager> manager);
+	void setPhysicsManager(UniquePtr<PhysicsManager> manager);
+	void setInputManager(UniquePtr<InputManager> manager);
+	void setAppManager(UniquePtr<AppManager> manager);
 
-	void setRenderManager(RenderManager *manager);
-	void setPhysicsManager(PhysicsManager *manager);
-	void setInputManager(InputManager *manager);
-	void setAppManager(AppManager *manager);
-
-	void setCreateAppFn(CreateAppFn fn);
-	void setCreateRendererFn(CreateRendererFn fn);
-
-	void initSys(int argc, char *argv[], input::Manager *inputManager_);
+	void initSys(int argc, char *argv[]);
+	void initInput();
 	void initRenderer(std::uint16_t w, std::uint16_t h);
 	void initApp();
 
@@ -68,15 +64,13 @@ namespace gpwe::sys{
 
 	void exit();
 
-	void *alloc(std::size_t n);
-	void free(void *ptr);
-
 	//std::uint32_t numRenderers();
 
 	Camera *camera();
-	Renderer *renderer();
-	input::Manager *inputManager();
-	resource::Manager *resourceManager();
+	AppManager *appManager();
+	RenderManager *renderManager();
+	InputManager *inputManager();
+	ResourceManager *resourceManager();
 }
 
 #endif // !GPWE_SYS_HPP
