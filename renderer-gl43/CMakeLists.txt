@@ -1,6 +1,5 @@
 set(
 	GPWE_RENDERER_GL43_SOURCES
-	shaders.hpp
 	RendererGL43.hpp
 	RendererGL43.cpp
 	RenderProgramGL43.cpp

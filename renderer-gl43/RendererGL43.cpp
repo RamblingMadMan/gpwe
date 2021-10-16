@@ -12,8 +12,6 @@
 
 #include "RendererGL43.hpp"
 
-#include "shaders.hpp"
-
 #include "shaders/fullbright.vert.hpp"
 #include "shaders/fullbright.frag.hpp"
 
@@ -251,13 +249,21 @@ void RendererGL43::present(const Camera *cam) noexcept{
 
 	glDrawBuffers(std::size(drawBufs), drawBufs);
 
+	glm::vec4 colorMix = glm::vec4(1.f);
+
 	auto viewProj = cam->projMat() * cam->viewMat();
 
 	auto fullbrightVert = reinterpret_cast<RenderProgramGL43*>(m_vertFullbright);
+	auto fullbrightFrag = reinterpret_cast<RenderProgramGL43*>(m_fragFullbright);
 
 	auto viewProjLoc = glGetUniformLocation(fullbrightVert->handle(), "viewProj");
 	if(viewProjLoc != -1){
 		glProgramUniformMatrix4fv(fullbrightVert->handle(), viewProjLoc, 1, GL_FALSE, glm::value_ptr(viewProj));
+	}
+
+	auto colorMixLoc = glGetUniformLocation(fullbrightFrag->handle(), "colorMix");
+	if(colorMixLoc != -1){
+		glProgramUniform4fv(fullbrightFrag->handle(), colorMixLoc, 1, glm::value_ptr(colorMix));
 	}
 
 	m_pipelineFullbright->use();

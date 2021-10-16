@@ -9,31 +9,9 @@ namespace fs = std::filesystem;
 using GPWEProc = void(*)();
 
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-using LibHandle = HMODULE;
-LibHandle loadLibrary(const char *path){ return LoadLibraryA(path); }
-void closeLibrary(LibHandle lib){ FreeLibrary(lib); }
-const char *loadLibraryError(){
-	static Str errMsg;
-	errMsg = std::to_string(GetLastError());
-	return errMsg.c_str();
-}
-GPWEProc loadFunction(LibHandle lib, const char *name){
-	return reinterpret_cast<GPWEProc>(GetProcAddress(lib, name));
-}
 #define LIB_PREFIX
 #define LIB_EXT ".dll"
-// LoadLibrary/FreeLibrary
 #else
-#include <dlfcn.h>
-using LibHandle = void*;
-LibHandle loadLibrary(const char *path){ return dlopen(path, RTLD_LAZY); }
-void closeLibrary(LibHandle lib){ dlclose(lib); }
-const char *loadLibraryError(){ return dlerror(); }
-GPWEProc loadFunction(LibHandle lib, const char *name){
-	return reinterpret_cast<GPWEProc>(dlsym(lib, name));
-}
 #define LIB_PREFIX "lib"
 #define LIB_EXT ".so"
 #endif
@@ -48,6 +26,7 @@ GPWEProc loadFunction(LibHandle lib, const char *name){
 #include "gpwe/resource.hpp"
 #include "gpwe/Ticker.hpp"
 #include "gpwe/Camera.hpp"
+#include "gpwe/WorkQueue.hpp"
 
 #include "physfs.h"
 
@@ -68,23 +47,7 @@ FT_Library gpweFtLib = nullptr;
 
 magic_t gpweMagic = nullptr;
 
-
-static void *gpweInputLib = nullptr;
-static void *gpweRendererLib = nullptr;
-static void *gpwePhysicsLib = nullptr;
-static void *gpweAppLib = nullptr;
-static void *gpweRendererArg = nullptr;
-
-sys::CreateManagerFn<sys::InputManager> gpweCreateInputManager = nullptr;
-sys::CreateManagerFn<sys::AppManager> gpweCreateAppManager = nullptr;
-sys::CreateManagerFn<sys::RenderManager> gpweCreateRenderManager = nullptr;
-sys::CreateManagerFn<sys::PhysicsManager> gpweCreatePhysicsManager = nullptr;
-
-UniquePtr<render::Manager> gpweRenderManager;
-UniquePtr<physics::Manager> gpwePhysicsManager;
-UniquePtr<input::Manager> gpweInputManager;
-UniquePtr<app::Manager> gpweAppManager;
-
+UniquePtr<sys::Manager> gpweSysManager;
 resource::Manager gpweResourceManager; // special, not a plugin
 
 gpwe::Camera gpweCamera(90.f, 1290.f/720.f);
@@ -95,7 +58,48 @@ std::atomic_bool gpweRunning = false;
 
 inline void logHeader(const Str &str){ gpwe::log("{:^30}\n\n", str); }
 
-static void initLibraries(int argc, char *argv[]){
+constexpr int apiNameColWidth = 16;
+constexpr int apiVersionColWidth = 30;
+constexpr int apiVersionWidth = apiNameColWidth + apiVersionColWidth;
+
+static void printVersions(){
+	FT_Int ftMaj, ftMin, ftPatch;
+	FT_Library_Version(gpweFtLib, &ftMaj, &ftMin, &ftPatch);
+
+	StrView libs[] = {
+		"PhysFS",
+		"libmagic",
+		"Freetype",
+		"FreeImage",
+		"Assimp"
+	};
+
+	PHYSFS_Version pfsVer;
+	PHYSFS_getLinkedVersion(&pfsVer);
+
+	Str versions[] = {
+		gpwe::format("{}.{}.{}", pfsVer.major, pfsVer.minor, pfsVer.patch),
+		gpwe::format("{}", magic_version()),
+		gpwe::format("{}.{}.{}", ftMaj, ftMin, ftPatch),
+		FreeImage_GetVersion(),
+		gpwe::format("{}.{}.{}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch())
+	};
+
+	logHeader("Version Info");
+
+	gpwe::log("┏{:━^{}}┯{:━^{}}┓\n", "┫ API ┣", apiNameColWidth + 2, "┫ Version ┣", apiVersionColWidth + 2);
+
+	for(std::size_t i = 0; i < std::size(libs); i++){
+		auto name = libs[i];
+		auto &&version = versions[i];
+
+		gpwe::log("┃ {:<{}} │ {:<{}} ┃\n", name, apiNameColWidth, version, apiVersionColWidth);
+	}
+
+	gpwe::log("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
+}
+
+void sys::Manager::initBaseLibraries(){
 	StrView names[] = {
 		"PhysFS",
 		"libmagic",
@@ -104,8 +108,8 @@ static void initLibraries(int argc, char *argv[]){
 	};
 
 	std::function<std::optional<Str>()> fns[] = {
-		[argv]() -> std::optional<Str>{
-			if(!PHYSFS_init(argv[0])){
+		[argv0{m_argv[0]}]() -> std::optional<Str>{
+			if(!PHYSFS_init(argv0)){
 				return PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
 			}
 
@@ -178,252 +182,149 @@ static void initLibraries(int argc, char *argv[]){
 	gpwe::log("\n");
 }
 
-constexpr int apiNameColWidth = 16;
-constexpr int apiVersionColWidth = 30;
-constexpr int apiVersionWidth = apiNameColWidth + apiVersionColWidth;
+sys::Manager::Manager(){}
 
-static void printVersions(){
-	FT_Int ftMaj, ftMin, ftPatch;
-	FT_Library_Version(gpweFtLib, &ftMaj, &ftMin, &ftPatch);
+sys::Manager::~Manager(){}
 
-	StrView libs[] = {
-		"PhysFS",
-		"libmagic",
-		"Freetype",
-		"FreeImage",
-		"Assimp"
-	};
+void sys::Manager::loadPlugins(){
+	auto libIter = fs::directory_iterator();
 
-	PHYSFS_Version pfsVer;
-	PHYSFS_getLinkedVersion(&pfsVer);
+	auto curPath = fs::current_path();
 
-	Str versions[] = {
-		gpwe::format("{}.{}.{}", pfsVer.major, pfsVer.minor, pfsVer.patch),
-		gpwe::format("{}", magic_version()),
-		gpwe::format("{}.{}.{}", ftMaj, ftMin, ftPatch),
-		FreeImage_GetVersion(),
-		gpwe::format("{}.{}.{}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch())
-	};
+	for(auto it = fs::directory_iterator(curPath); it != fs::directory_iterator(); ++it){
+		auto path = it->path();
+		if(path.parent_path() != curPath || path.extension() != LIB_EXT) continue;
 
-	logHeader("Version Info");
+		auto pathStr = path.filename().string<char, std::char_traits<char>, Allocator<char>>();
 
-	gpwe::log("┏{:━^{}}┯{:━^{}}┓\n", "┫ API ┣", apiNameColWidth + 2, "┫ Version ┣", apiVersionColWidth + 2);
+		auto plugin = sys::resourceManager()->openPlugin(pathStr);
+		if(!plugin){
+			continue;
+		}
 
-	for(std::size_t i = 0; i < std::size(libs); i++){
-		auto name = libs[i];
-		auto &&version = versions[i];
+		m_plugins.emplace_back(plugin);
 
-		gpwe::log("┃ {:<{}} │ {:<{}} ┃\n", name, apiNameColWidth, version, apiVersionColWidth);
+		switch(plugin->managerKind()){
+			case ManagerKind::render:{
+				m_renderPlugins.emplace_back(plugin);
+				break;
+			}
+
+			case ManagerKind::physics:{
+				m_physicsPlugins.emplace_back(plugin);
+				break;
+			}
+
+			case ManagerKind::input:{
+				m_inputPlugins.emplace_back(plugin);
+				break;
+			}
+
+			case ManagerKind::app:{
+				m_appPlugins.emplace_back(plugin);
+				break;
+			}
+
+			default: break;
+		}
+	}
+}
+
+std::atomic_flag sys::Manager::m_initFlag = ATOMIC_FLAG_INIT;
+
+void sys::Manager::update(float dt){
+	m_inputManager->pumpEvents();
+	m_appManager->update(dt);
+	m_renderManager->present(&gpweCamera);
+}
+
+void sys::Manager::setRenderManager(UniquePtr<RenderManager> manager){
+	m_renderManager = std::move(manager);
+}
+
+void sys::Manager::setPhysicsManager(UniquePtr<PhysicsManager> manager){
+	m_physicsManager = std::move(manager);
+}
+
+void sys::Manager::setInputManager(UniquePtr<InputManager> manager){
+	m_inputManager = std::move(manager);
+}
+
+void sys::Manager::setAppManager(UniquePtr<AppManager> manager){
+	m_appManager = std::move(manager);
+}
+
+void sys::Manager::init(){
+	if(m_initFlag.test_and_set()){
+		logErrorLn("sys::Manager::init() called more than once");
+		return;
 	}
 
-	gpwe::log("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
-}
-
-void sys::setRendererArg(void *val){
-	gpweRendererArg = val;
-}
-
-void sys::setRenderManager(UniquePtr<render::Manager> manager){
-	gpweRenderManager = std::move(manager);
-}
-
-void sys::setPhysicsManager(UniquePtr<PhysicsManager> manager){
-	gpwePhysicsManager = std::move(manager);
-}
-
-void sys::setInputManager(UniquePtr<InputManager> manager){
-	gpweInputManager = std::move(manager);
-}
-
-void sys::setAppManager(UniquePtr<AppManager> manager){
-	gpweAppManager = std::move(manager);
-}
-
-void sys::initSys(int argc, char *argv[]){
 	auto launchT = std::chrono::system_clock::now();
 	std::time_t launchTime = std::chrono::system_clock::to_time_t(launchT);
 	logLn("{}", std::ctime(&launchTime));
 
 	log("{:^{}}\n\n",
-		format("-- General Purpose World Engine v{}.{}.{}/{} --", GPWE_VERSION_MAJOR, GPWE_VERSION_MINOR, GPWE_VERSION_PATCH, GPWE_VERSION_GIT),
+		format(
+			"-- General Purpose World Engine v{}.{}.{}/{} --",
+			GPWE_VERSION_MAJOR, GPWE_VERSION_MINOR, GPWE_VERSION_PATCH, GPWE_VERSION_GIT
+		),
 		30
 	);
 
-	initLibraries(argc, argv);
+	initBaseLibraries();
+	loadPlugins();
 
-	auto libIter = fs::directory_iterator();
+	auto ensureManager = [this](StrView kind_, auto &&manager, auto &&plugins){
+		if(manager) return;
 
-	auto curPath = fs::current_path();
-
-	std::vector<Str> appPaths, rendererPaths, inputPaths;
-
-	for(auto it = fs::directory_iterator(curPath); it != fs::directory_iterator(); ++it){
-		auto fileName = it->path().filename().string();
-
-		constexpr StrView appPrefix = LIB_PREFIX "gpwe-app-";
-		constexpr StrView rendererPrefix = LIB_PREFIX "gpwe-renderer-";
-		constexpr StrView inputPrefix = LIB_PREFIX "gpwe-input-";
-
-		if(fileName.find(appPrefix) == 0){
-			if(fileName.rfind(LIB_EXT) != fileName.size() - (std::size(LIB_PREFIX) - 1)){
-				continue;
-			}
-
-			auto appName = fileName.substr(appPrefix.size());
-			if(appName == LIB_EXT){
-				logErrorLn("Invalid app library '{}'", fileName);
-				continue;
-			}
-
-			appPaths.emplace_back("./" + fileName);
-		}
-		else if(fileName.find(rendererPrefix) == 0){
-			if(fileName.rfind(LIB_EXT) != fileName.size() - (std::size(LIB_PREFIX) - 1)){
-				continue;
-			}
-
-			auto rendererName = fileName.substr(rendererPrefix.size());
-			if(rendererName == LIB_EXT){
-				logErrorLn("Invalid renderer library '{}'", fileName);
-				continue;
-			}
-
-			rendererPaths.emplace_back("./" + fileName);
-		}
-		else if(fileName.find(inputPrefix) == 0){
-			if(fileName.rfind(LIB_EXT) != fileName.size() - (std::size(LIB_PREFIX) - 1)){
-				continue;
-			}
-
-			auto inputName = fileName.substr(inputPrefix.size());
-			if(inputName == LIB_EXT){
-				logErrorLn("Invalid input library '{}'", fileName);
-				continue;
-			}
-
-			inputPaths.emplace_back("./" + fileName);
-		}
-	}
-
-	if(!gpweInputManager && !gpweCreateInputManager){
-		// Load input
-		gpweInputLib = loadLibrary(!rendererPaths.empty() ? rendererPaths[0].c_str() : nullptr);
-		if(!gpweInputLib){
-			logErrorLn("{}", loadLibraryError());
-			std::exit(3);
+		if(plugins.empty()){
+			logErrorLn("No {} plugins found", kind_);
+			std::exit(4);
 		}
 
-		std::atexit([]{ closeLibrary(gpweInputLib); });
+		auto base = plugins[0]->createManager();
+		manager = UniquePtr(reinterpret_cast<decltype(manager.get())>(base.release()));
+	};
 
-		auto createInputManagerFn = loadFunction(gpweInputLib, "gpweCreateInputManager");
-		if(!createInputManagerFn){
-			logErrorLn("{}", loadLibraryError());
-			std::exit(3);
-		}
+	ensureManager("render", m_renderManager, m_renderPlugins);
+	ensureManager("physics", m_physicsManager, m_physicsPlugins);
+	ensureManager("input", m_inputManager, m_inputPlugins);
+	ensureManager("app", m_appManager, m_appPlugins);
 
-		gpweCreateInputManager = reinterpret_cast<sys::CreateManagerFn<InputManager>>(createInputManagerFn);
-	}
+	m_renderManager->setArg(m_renderArg);
+	m_renderManager->setRenderSize(m_rW, m_rH);
 
-	if(!gpweRenderManager && !gpweCreateRenderManager){
-		// Load renderer
-		gpweRendererLib = loadLibrary(!rendererPaths.empty() ? rendererPaths[0].c_str() : nullptr);
-		if(!gpweRendererLib){
-			logErrorLn("{}", loadLibraryError());
-			std::exit(3);
-		}
-
-		std::atexit([]{ closeLibrary(gpweRendererLib); });
-
-		auto createRenderManagerFn = loadFunction(gpweRendererLib, "gpweCreateRenderManager");
-		if(!createRenderManagerFn){
-			logErrorLn("{}", loadLibraryError());
-			std::exit(3);
-		}
-
-		gpweCreateRenderManager = reinterpret_cast<sys::CreateManagerFn<RenderManager>>(createRenderManagerFn);
-	}
-
-	if(!gpweAppManager && !gpweCreateAppManager){
-		// Load app
-		gpweAppLib = loadLibrary(!appPaths.empty() ? appPaths[0].c_str() : nullptr);
-		if(!gpweAppLib){
-			logErrorLn("{}", loadLibraryError());
-			std::exit(3);
-		}
-
-		std::atexit([]{ closeLibrary(gpweAppLib); });
-
-		auto createAppManagerFn = loadFunction(gpweAppLib, "gpweCreateAppManager");
-		if(!createAppManagerFn){
-			logErrorLn("{}", loadLibraryError());
-			std::exit(3);
-		}
-
-		gpweCreateAppManager = reinterpret_cast<sys::CreateManagerFn<AppManager>>(createAppManagerFn);
-	}
-
-	printVersions();
+	m_inputManager->init();
+	m_renderManager->init();
+	m_physicsManager->init();
+	m_appManager->init();
 }
 
-void sys::initInput(){
-	if(!gpweInputManager && !gpweCreateInputManager){
-		logErrorLn("No input loaded");
+void sys::Manager::setRenderSize(std::uint16_t w, std::uint16_t h){
+	m_rW = w;
+	m_rH = h;
+	if(m_renderManager){
+		m_renderManager->setRenderSize(w, h);
+	}
+}
+
+void sys::setSysManager(UniquePtr<SysManager> manager){
+	gpweSysManager = std::move(manager);
+}
+
+void sys::init(int argc, char *argv[]){
+	if(!gpweSysManager){
+		logErrorLn("No system manager set");
 		std::exit(4);
 	}
 
-	if(!gpweInputManager){
-		gpweInputManager = gpweCreateInputManager();
-		if(!gpweInputManager){
-			logErrorLn("Error in gpweCreateInputManager");
-			std::exit(4);
-		}
-	}
-
-	gpweInputManager->init();
-}
-
-void sys::initRenderer(std::uint16_t w, std::uint16_t h){
-	if(!gpweRenderManager && !gpweCreateRenderManager){
-		logErrorLn("No renderer loaded");
-		std::exit(4);
-	}
-
-	gpweWidth = w;
-	gpweHeight = h;
-
-	if(!gpweRenderManager){
-		gpweRenderManager = gpweCreateRenderManager();
-		if(!gpweRenderManager){
-			logErrorLn("Error in gpweCreateRenderManager");
-			std::exit(4);
-		}
-	}
-
-	gpweRenderManager->setArg(gpweRendererArg);
-	gpweRenderManager->init();
-}
-
-void sys::initApp(){
-	if(!gpweAppManager && !gpweCreateAppManager){
-		logErrorLn("No app loaded");
-		std::exit(4);
-	}
-
-	if(!gpweAppManager){
-		gpweAppManager = gpweCreateAppManager();
-		if(!gpweAppManager){
-			logErrorLn("Error in gpweCreateAppManager");
-			std::exit(4);
-		}
-	}
-
-	gpweAppManager->init();
+	gpweSysManager->setArgs(argc, argv);
+	gpweSysManager->init();
 }
 
 void sys::tick(float dt){
-	gpweInputManager->pumpEvents();
-	gpweAppManager->update(dt);
-	gpweRenderManager->present(&gpweCamera);
+	gpweSysManager->update(dt);
 }
 
 int sys::exec(PresentFn presentFn){
@@ -438,13 +339,7 @@ int sys::exec(PresentFn presentFn){
 		presentFn();
 	}
 
-	// must destroy app before renderer
-	gpweAppManager.reset();
-
-	// Must destroy renderer before context and window
-	gpweRenderManager.reset();
-
-	gpweInputManager.reset();
+	gpweSysManager.reset();
 
 	return 0;
 }
@@ -463,10 +358,12 @@ void sys::free(void *ptr){
 
 Camera *sys::camera(){ return &gpweCamera; }
 
-app::Manager *sys::appManager(){ return gpweAppManager.get(); }
+sys::Manager *sys::sysManager(){ return gpweSysManager.get(); }
 
-render::Manager *sys::renderManager(){ return gpweRenderManager.get(); }
+app::Manager *sys::appManager(){ return gpweSysManager->appManager(); }
 
-input::Manager *sys::inputManager(){ return gpweInputManager.get(); }
+render::Manager *sys::renderManager(){ return gpweSysManager->renderManager(); }
+
+input::Manager *sys::inputManager(){ return gpweSysManager->inputManager(); }
 
 resource::Manager *sys::resourceManager(){ return &gpweResourceManager; }

@@ -203,18 +203,17 @@ int main(int argc, char *argv[]){
 		SDL_GL_SetSwapInterval(1);
 	}
 
-	SDLInputManager inputManager;
-
 	using Proc = void(*)();
 	auto loadGLFn = +[](const char *name){ return (Proc)SDL_GL_GetProcAddress(name); };
 
-	sys::setInputManager(gpwe::makeUnique<SDLInputManager>());
-	sys::setRendererArg((void*)loadGLFn);
+	auto manager = makeUnique<sys::Manager>();
 
-	sys::initSys(argc, argv);
-	sys::initInput();
-	sys::initRenderer(1280, 720);
-	sys::initApp();
+	manager->setInputManager(gpwe::makeUnique<SDLInputManager>());
+	manager->setRenderArg((void*)loadGLFn);
+	manager->setRenderSize(1280, 720);
+
+	sys::setSysManager(std::move(manager));
+	sys::init(argc, argv);
 
 	return sys::exec(std::bind(SDL_GL_SwapWindow, gpweWin));
 }

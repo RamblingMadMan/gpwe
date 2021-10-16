@@ -42,7 +42,12 @@ namespace gpwe::render{
 		count
 	};
 
-	class Manager: public gpwe::Manager<Manager, Group, Texture, Framebuffer, Program, Pipeline>{
+	class Manager:
+			public gpwe::Manager<
+				Manager, ManagerKind::render,
+				Group, Texture, Framebuffer, Program, Pipeline
+			>
+	{
 		public:
 			virtual ~Manager() = default;
 
@@ -54,14 +59,39 @@ namespace gpwe::render{
 				return create<Group>(1, &shape);
 			}
 
+			void setRenderSize(std::uint16_t w, std::uint16_t h){
+				onRenderResize(w, h);
+				m_w = w;
+				m_h = h;
+			}
+
+			std::uint16_t renderWidth() const noexcept{ return m_w; }
+			std::uint16_t renderHeight() const noexcept{ return m_h; }
+
 		protected:
-			virtual UniquePtr<Group> doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes) = 0;
-			virtual UniquePtr<Texture> doCreateTexture(std::uint16_t w, std::uint16_t h, TextureKind kind, const void *pixels = nullptr) = 0;
-			virtual UniquePtr<Framebuffer> doCreateFramebuffer(std::uint16_t w, std::uint16_t h, const Vector<TextureKind> &attachments) = 0;
+			virtual UniquePtr<Group> doCreateGroup(
+				std::uint32_t numShapes, const VertexShape **shapes
+			) = 0;
+
+			virtual UniquePtr<Texture> doCreateTexture(
+				std::uint16_t w, std::uint16_t h, TextureKind kind,
+				const void *pixels = nullptr
+			) = 0;
+
+			virtual UniquePtr<Framebuffer> doCreateFramebuffer(
+				std::uint16_t w, std::uint16_t h,
+				const Vector<TextureKind> &attachments
+			) = 0;
+
 			virtual UniquePtr<Program> doCreateProgram(ProgramKind kind, std::string_view src) = 0;
+
 			virtual UniquePtr<Pipeline> doCreatePipeline(const Vector<Program*> &progs) = 0;
 
-			void *m_arg;
+			virtual void onRenderResize(std::uint16_t w, std::uint16_t h){}
+
+			void *m_arg = nullptr;
+
+			std::uint16_t m_w = 0, m_h = 0;
 
 			friend class Group;
 			friend class Texture;
@@ -126,12 +156,6 @@ namespace gpwe::render{
 }
 
 #define GPWE_RENDERER(type, name, author, major, minor, patch)\
-extern "C" const char *gpweRendererName(){ return name; }\
-extern "C" const char *gpweRendererAuthor(){ return author; }\
-extern "C" gpwe::Version gpweRendererVersion(){ return { major, minor, patch }; }\
-extern "C" gpwe::render::Manager *gpweCreateRenderManager(){\
-	auto mem = gpwe::sys::alloc(sizeof(type));\
-	return new(mem) type();\
-}
+	GPWE_PLUGIN(render, type, name, author, major, minor, patch)
 
 #endif // !GPWE_RENDER_HPP

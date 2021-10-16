@@ -6,10 +6,10 @@ layout(location = 1) out vec3 outNormal;
 in vec3 norm_v;
 in vec2 uv_v;
 
+uniform vec4 colorMix;
 uniform sampler2D tex;
 
 void main(){
-	float illum = max(norm_v.y, 0.1) + max(abs(norm_v.z * 0.5), 0.1);
-	outAlbedo = vec4(vec3(illum), 1.0);
+	outAlbedo = vec4(colorMix);
 	outNormal = norm_v;
 }

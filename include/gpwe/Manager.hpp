@@ -1,6 +1,7 @@
 #ifndef GPWE_MANAGER_HPP
 #define GPWE_MANAGER_HPP 1
 
+#include "Version.hpp"
 #include "List.hpp"
 
 namespace gpwe{
@@ -25,10 +26,27 @@ namespace gpwe{
 			virtual ~Managed() = default;
 	};
 
-	template<typename Derived, typename ... Ts>
-	class Manager: public detail::ManagerStorage<Ts>...{
+	enum class ManagerKind: std::uint8_t{
+		data = 1,
+		plugin = 1 << 1,
+		app = 1 << 2,
+		render = 1 << 3,
+		physics = 1 << 4,
+		input = 1 << 5,
+		sys = 1 << 6
+	};
+
+	class ManagerBase{
+		public:
+			virtual ~ManagerBase() = default;
+	};
+
+	template<typename Derived, ManagerKind Kind_, typename ... Ts>
+	class Manager: public ManagerBase, public detail::ManagerStorage<Ts>...{
 		public:
 			virtual ~Manager() = default;
+
+			static ManagerKind managerKind() noexcept{ return Kind_; }
 
 			virtual void init(){}
 
@@ -44,6 +62,12 @@ namespace gpwe{
 			template<typename T>
 			bool destroy(T *ptr){
 				return eraseUnique(ptr);
+			}
+
+			template<typename T>
+			std::size_t numManaged() const noexcept{
+				using namespace detail;
+				return this->ManagerStorage<T>::ptrs().size();
 			}
 
 		protected:
@@ -110,6 +134,16 @@ namespace gpwe{
 				else return end;
 			}
 	};
+}
+
+#define GPWE_PLUGIN(kind, type, name, author, major, minor, patch)\
+extern "C" const char *gpwePlugin##Name(){ return name; }\
+extern "C" const char *gpwePlugin##Author(){ return author; }\
+extern "C" gpwe::Version gpwePlugin##Version(){ return { major, minor, patch }; }\
+extern "C" gpwe::ManagerKind gpwePlugin##Kind(){ return gpwe::ManagerKind::kind; }\
+extern "C" gpwe::ManagerBase *gpwePluginCreateManager(){\
+	auto mem = gpwe::sys::alloc(sizeof(type));\
+	return new(mem) type();\
 }
 
 #endif // !GPWE_MANAGER_HPP 1

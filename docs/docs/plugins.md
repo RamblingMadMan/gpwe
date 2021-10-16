@@ -72,6 +72,9 @@ void RendererGL::doRendererThings(){
 	auto vertSrc = gpwe::embed::shaders_vert_str();
 	auto fragSrc = gpwe::embed::shaders_frag_str();
 
+	auto vert = create<render::Program>(render::ProgramKind::vertex, vertSrc);
+	auto frag = create<render::Program>(render::ProgramKind::fragment, vertSrc);
+
 	// ...
 }
 ```

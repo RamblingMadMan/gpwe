@@ -14,8 +14,6 @@ class TestApp: public gpwe::app::Manager{
 		void update(float dt) override{}
 };
 
-GPWE_APP(TestApp, "Test App", "RamblingMad", 0, 0, 0)
-
 class InputManager: public gpwe::input::Manager{
 	public:
 		InputManager(){
@@ -25,11 +23,13 @@ class InputManager: public gpwe::input::Manager{
 };
 
 int main(int argc, char *argv[]){
-	gpwe::sys::setAppManager(gpwe::makeUnique<TestApp>());
-	gpwe::sys::setInputManager(gpwe::makeUnique<InputManager>());
+	auto manager = gpwe::makeUnique<gpwe::sys::Manager>();
 
-	gpwe::sys::initSys(argc, argv);
-	gpwe::sys::initInput();
+	manager->setArgs(argc, argv);
+	manager->setAppManager(gpwe::makeUnique<TestApp>());
+	manager->setInputManager(gpwe::makeUnique<InputManager>());
+
+	gpwe::sys::setSysManager(std::move(manager));
 
 	QApplication::setApplicationName("GPWE Embed Test");
 	QApplication::setOrganizationName("Hamsmith");

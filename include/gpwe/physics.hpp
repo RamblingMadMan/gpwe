@@ -9,7 +9,7 @@ namespace gpwe::physics{
 	class Body;
 	class World;
 
-	class Manager: public gpwe::Manager<Manager, World>{
+	class Manager: public gpwe::Manager<Manager, ManagerKind::physics, World>{
 		public:
 			virtual ~Manager() = default;
 
@@ -23,7 +23,7 @@ namespace gpwe::physics{
 
 	class World :
 		public Managed<Manager, &Manager::doCreateWorld>,
-		public gpwe::Manager<BodyShape, Body>
+		public gpwe::Manager<World, ManagerKind::data, BodyShape, Body>
 	{
 		public:
 			virtual ~World() = default;
@@ -52,5 +52,8 @@ namespace gpwe::physics{
 			virtual glm::vec3 position() const noexcept = 0;
 	};
 }
+
+#define GPWE_PHYSICS(type, name, author, major, minor, patch)\
+	GPWE_PLUGIN(physics, type, name, author, major, minor, patch)
 
 #endif // !GPWE_PHYSICS_HPP

@@ -3,7 +3,9 @@
 
 #include <memory>
 #include <filesystem>
+#include <variant>
 
+#include "Manager.hpp"
 #include "Str.hpp"
 #include "Map.hpp"
 #include "Shape.hpp"
@@ -16,23 +18,75 @@ namespace gpwe{
 }
 
 namespace gpwe::resource{
+	class Asset;
+	class Plugin;
+	class Image;
+	class Font;
+	class Model;
+
+	enum class Access: std::uint8_t{
+		read = 0x1, write = 0x2, readWrite = read | write
+	};
+
+	class Manager{
+		public:
+			Manager();
+			~Manager();
+
+			bool mount(const Path &path, StrView dir, bool mountBefore = true);
+
+			Asset *openFile(StrView path, Access access_ = Access::read);
+			Plugin *openPlugin(StrView path);
+			Font *openFont(StrView path);
+			Model *openModel(StrView path);
+
+			void update();
+
+			Vector<Plugin*> plugins() const{
+				Vector<Plugin*> ret;
+				ret.reserve(m_assets.size());
+				for(auto &&p : m_plugins){
+					ret.emplace_back(p.second);
+				}
+				return ret;
+			}
+
+		private:
+			UniquePtr<Model> createModelFileAsset(
+				Str path,
+				Vector<char> bytes
+			);
+
+			UniquePtr<Font> createFontFileAsset(
+				Str path,
+				Vector<char> bytes
+			);
+
+			UniquePtr<Plugin> createPluginFileAsset(Str path);
+
+			Map<Str, Str> m_mounts;
+			Vector<UniquePtr<Asset>> m_assets;
+			Map<Str, Asset*> m_files;
+			Map<Str, Plugin*> m_plugins;
+	};
+
 	class Asset{
 		public:
 			enum class Kind{
-				file, mem,
+				file, mem, embed,
 
 				count
 			};
 
-			enum class Access: std::uint8_t{
-				read = 0x1, write = 0x2, readWrite = read | write
-			};
+			using Access = resource::Access;
 
 			enum class Category{
-				binary, text, image, model,
+				binary, text, image, font, model, plugin,
 
 				count
 			};
+
+			using DataPtrVar = std::variant<const void*, const char*>;
 
 			virtual ~Asset() = default;
 
@@ -90,6 +144,25 @@ namespace gpwe::resource{
 			friend class Manager;
 	};
 
+	class Plugin: public Asset{
+		public:
+			using Proc = void(*)();
+
+			virtual StrView name() const noexcept = 0;
+			virtual StrView author() const noexcept = 0;
+			virtual Version version() const noexcept = 0;
+
+			virtual ManagerKind managerKind() const noexcept = 0;
+
+			virtual UniquePtr<ManagerBase> createManager() const noexcept = 0;
+
+			virtual Proc loadFunction(const Str &name) const noexcept = 0;
+
+		protected:
+			Plugin(Kind kind_, Str path_)
+				: Asset(kind_, Access::read, Category::plugin, std::move(path_)){}
+	};
+
 	class Image: public Asset{
 		public:
 			Texture::Kind textureKind() const noexcept{ return m_texKind; }
@@ -118,6 +191,29 @@ namespace gpwe::resource{
 			std::uint16_t m_w, m_h;
 	};
 
+	class Font: public Asset{
+		public:
+			class Face{
+				public:
+					virtual ~Face() = default;
+
+					virtual void setPtSize(std::uint16_t pt) = 0;
+
+					virtual StrView family() const noexcept = 0;
+					virtual StrView style() const noexcept = 0;
+			};
+
+			virtual std::size_t numFaces() const noexcept = 0;
+			virtual Face *face(std::size_t idx) noexcept = 0;
+			virtual const Face *face(std::size_t idx) const noexcept = 0;
+
+		protected:
+			Font(
+				Kind kind_, Access access_, Str path_
+			)
+				: Asset(kind_, access_, Category::font, std::move(path_)){}
+	};
+
 	class Model: public Asset{
 		public:
 			const Vector<shapes::TriangleMesh> &meshes() const noexcept{
@@ -141,29 +237,6 @@ namespace gpwe::resource{
 
 		private:
 			Vector<shapes::TriangleMesh> m_meshes;
-	};
-
-	class Manager{
-		public:
-			Manager();
-			~Manager();
-
-			bool mount(const Path &path, StrView dir, bool mountBefore = true);
-
-			Asset *openFile(StrView path, Asset::Access access_ = Asset::Access::read);
-			Model *openModel(StrView path, Asset::Access access_ = Asset::Access::read);
-
-			void update();
-
-		private:
-			UniquePtr<Model> createModelFileAsset(
-				Str path, Asset::Access access_,
-				Vector<char> bytes
-			);
-
-			Map<Str, Str> m_mounts;
-			Vector<UniquePtr<Asset>> m_assets;
-			Map<Str, Asset*> m_files;
 	};
 }
 

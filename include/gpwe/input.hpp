@@ -140,7 +140,7 @@ namespace gpwe::input{
 			std::uint32_t m_id;
 	};
 
-	class Manager: public gpwe::Manager<Manager>{
+	class Manager: public gpwe::Manager<Manager, ManagerKind::input>{
 		public:
 			using PumpEventFn = std::function<void()>;
 
@@ -207,5 +207,8 @@ namespace gpwe::input{
 			List<PumpEventFn> m_pumpFns;
 	};
 }
+
+#define GPWE_INPUT(type, name, author, major, minor, patch)\
+	GPWE_PLUGIN(InputManager, type, name, author, major, minor, patch)
 
 #endif // !GPWE_INPUT_HPP

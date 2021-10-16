@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14.0 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-project(gpwe VERSION 0.0.0 LANGUAGES C CXX)
+project(gpwe VERSION 0.0.1 LANGUAGES C CXX)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	set(GPWE_MASTER_PROJECT TRUE)
@@ -23,6 +23,13 @@ execute_process(
 	OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+execute_process(
+	COMMAND git rev-parse --abbrev-ref HEAD
+	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+	OUTPUT_VARIABLE GPWE_GIT_BRANCH
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 set(GPWE_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
 set(GPWE_INCLUDE_DIRS ${GPWE_INCLUDE_DIR} ${PROJECT_BINARY_DIR}/include)
 
@@ -34,6 +41,7 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/Version.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Allocator.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Manager.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/WorkQueue.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/sys.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/render.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/physics.hpp
@@ -139,6 +147,7 @@ if(GPWE_BUILD_TESTGAME)
 endif()
 
 if(GPWE_BUILD_CLIENT)
+	add_subdirectory(sys-sdl2)
 	add_subdirectory(client)
 endif()
 

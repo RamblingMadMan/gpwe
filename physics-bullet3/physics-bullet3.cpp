@@ -11,6 +11,8 @@
 
 #include "physics-bullet3.hpp"
 
+GPWE_PHYSICS(gpwe::physics::bullet3::Manager, "Bullet Physics Plugin", "Hamsmith", 0, 0, 0)
+
 using namespace gpwe;
 using namespace gpwe::physics::bullet3;
 

@@ -12,6 +12,8 @@ namespace gpwe::embed{
 	inline const char *${RES_NAME}_data() noexcept{ return _binary_${RES_NAME}_start; }
 	inline std::size_t ${RES_NAME}_size() noexcept{ return _binary_${RES_NAME}_end - _binary_${RES_NAME}_start; }
 	inline StrView ${RES_NAME}_str() noexcept{ return StrView(${RES_NAME}_data(), ${RES_NAME}_size()); }
+
+	inline StrView ${RES_NAME}_path() noexcept{ return "${res}"; }
 }
 
 #endif // !GPWE_${RES_NAME}_HPP
