@@ -1,0 +1,79 @@
+:root {
+	--hamsmith-orange: rgb(255, 120, 0);
+}
+
+body {
+	background-image: none;
+	background-color: #232323;
+	color: #999999;
+}
+
+.bg-dark {
+	background-image: none;
+	background-color: var(--gray-dark) !important;
+}
+
+.navbar-light {
+	background-color: #133769 !important;
+}
+
+.nav {
+	border-radius: 0 !important;
+	background-color: var(--gray-dark) !important;
+}
+
+.nav-item .nav-link {
+	color: white;
+}
+
+.navitem.active .nav-link {
+	color: var(--hamsmith-orange) !important;
+}
+
+.active.nav-link {
+	color: var(--hamsmith-orange) !important;
+}
+
+.card {
+	border: 0;
+	border-radius: 0 !important;
+}
+
+.modal-content {
+	color: var(--gray-dark);
+}
+
+h1 {
+	color: lightgray;
+}
+
+h2 {
+	color: lightgray;
+}
+
+code {
+	border: 1px solid #404040;
+	color: lightgray;
+	background-color: #303030;
+}
+
+pre {
+	border: 1px solid #404040;
+}
+
+.hljs {
+	color: lightgray;
+	background-color: #303030;
+}
+
+.hljs-built_in {
+	color: lightgoldenrodyellow;
+}
+
+.hljs-keyword {
+	color: lightcoral;
+}
+
+.hljs-title {
+	color: lightblue;
+}

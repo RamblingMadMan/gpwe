@@ -12,6 +12,7 @@ endif()
 
 option(GPWE_BUILD_EDITOR "Build the GPWE editor" ${GPWE_MASTER_PROJECT})
 option(GPWE_BUILD_CLIENT "Build the GPWE client" ${GPWE_MASTER_PROJECT})
+option(GPWE_BUILD_DOCS "Build the GPWE docs" ${GPWE_MASTER_PROJECT})
 option(GPWE_BUILD_TESTGAME "Build the GPWE test game" ${GPWE_MASTER_PROJECT})
 option(GPWE_BUILD_TESTEMBED "Build the GPWE embedding test app" ${GPWE_MASTER_PROJECT})
 
@@ -128,6 +129,10 @@ target_link_libraries(
 add_subdirectory(base)
 add_subdirectory(renderer-gl43)
 add_subdirectory(physics-bullet3)
+
+if(GPWE_BUILD_DOCS)
+	add_subdirectory(docs)
+endif()
 
 if(GPWE_BUILD_TESTGAME)
 	add_subdirectory(testgame)

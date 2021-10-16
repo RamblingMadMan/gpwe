@@ -24,6 +24,18 @@ GPWE is an engine designed primarily for creating games and 3D environments, but
   
 <p><br /></p>
 
+<h2 align="center">Docs</h2>
+
+<p><br /></p>
+
+<div align="center">
+
+For full documentation visit [gpwe.dev](https://gpwe.dev/).
+
+</div>
+
+<p><br /></p>
+
 <h2 align="center">Dependencies</h2>
   
 <p><br /></p>
