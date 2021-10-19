@@ -154,8 +154,8 @@ void gpweGLMessageCB(
 ){
 	if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
 
-	logLn(
-		severity == GL_DEBUG_SEVERITY_HIGH ? LogKind::error : LogKind::warning,
+	log::outLn(
+		severity == GL_DEBUG_SEVERITY_HIGH ? log::Kind::error : log::Kind::warning,
 		"{}[{}]: {}",
 		glbinding::aux::Meta::getString(source),
 		glbinding::aux::Meta::getString(severity),
@@ -168,9 +168,9 @@ RendererGL43::RendererGL43(){}
 RendererGL43::~RendererGL43(){}
 
 void RendererGL43::init(){
-	log("{:<30}", "Initializing glbinding...");
+	log::info("{:<30}", "Initializing glbinding...");
 	glbinding::initialize(reinterpret_cast<GLGetProcFn>(m_arg));
-	logLn("Done");
+	log::infoLn("Done");
 
 #ifndef NDEBUG
 	glEnable(GL_DEBUG_OUTPUT);
@@ -178,7 +178,7 @@ void RendererGL43::init(){
 	glDebugMessageCallback(gpweGLMessageCB, nullptr);
 #endif
 
-	log("{:<30}", "Creating framebuffer...");
+	log::info("{:<30}", "Creating framebuffer...");
 	m_gbuffer = create<render::Framebuffer>(
 		1280, 720,
 		Vector<render::TextureKind>{
@@ -188,30 +188,30 @@ void RendererGL43::init(){
 			render::TextureKind::rgb10a2 // hdr/lighting
 		}
 	);
-	logLn("Done");
+	log::infoLn("Done");
 
-	log("{:<30}", "Compiling shaders...");
+	log::info("{:<30}", "Compiling shaders...");
 
 	m_vertFullbright = create<render::Program>(render::ProgramKind::vertex, embed::shaders_fullbright_vert_str());
 	if(!m_vertFullbright){
-		logError("Error\n");
+		log::error("Error\n");
 		throw std::runtime_error("Error compiling fullbright vertex shader");
 	}
 
 	m_fragFullbright = create<render::Program>(render::ProgramKind::fragment, embed::shaders_fullbright_frag_str());
 	if(!m_vertFullbright){
-		logError("Error\n");
+		log::error("Error\n");
 		throw std::runtime_error("Error compiling fullbright fragment shader");
 	}
 
 	m_pipelineFullbright = create<render::Pipeline>(Vector<render::Program*>{ m_vertFullbright, m_fragFullbright });
-	logLn("Done");
+	log::infoLn("Done");
 
-	logLn("");
+	log::infoLn("");
 
-	logLn("OpenGL Version: {}", (const char*)glGetString(GL_VERSION));
+	log::infoLn("OpenGL Version: {}", (const char*)glGetString(GL_VERSION));
 
-	logLn("");
+	log::infoLn("");
 }
 
 void RendererGL43::present(const Camera *cam) noexcept{
@@ -295,7 +295,7 @@ UniquePtr<render::Pipeline> RendererGL43::doCreatePipeline(const Vector<render::
 	for(auto prog : progs){
 		auto glProg = dynamic_cast<RenderProgramGL43*>(prog);
 		if(!glProg){
-			logLn("non-GL program given to createPipeline");
+			log::warnLn("non-GL program given to createPipeline");
 			return nullptr;
 		}
 

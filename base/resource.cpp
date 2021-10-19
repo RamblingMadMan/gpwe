@@ -104,7 +104,7 @@ namespace gpwe::resource{
 			Proc loadFunction(const Str &name) const noexcept override{
 				auto ret = ::loadFunction(m_handle, name.c_str());
 				if(!ret){
-					logErrorLn("Error in loadFunction: {}", loadLibraryError());
+					log::errorLn("Error in loadFunction: {}", loadLibraryError());
 				}
 
 				return ret;
@@ -209,7 +209,7 @@ bool resource::Manager::mount(const fs::path &path, StrView dir, bool mountBefor
 	auto dirStr = Str(dir);
 	auto res = PHYSFS_mount(pathStr.c_str(), dirStr.c_str(), !mountBefore);
 	if(!res){
-		logErrorLn("Error in PHYSFS_mount: {}", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		log::errorLn("Error in PHYSFS_mount: {}", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 	}
 
 	return res != 0;
@@ -227,7 +227,7 @@ resource::Asset *resource::Manager::openFile(StrView path, Access access_){
 		auto fileFlags = (std::uint8_t)ret->access();
 		auto openFlags = (std::uint8_t)access_;
 		if((fileFlags & openFlags) != openFlags){
-			logErrorLn("Can not open file with access flags 0x{:h}", openFlags);
+			log::errorLn("Can not open file with access flags 0x{:h}", openFlags);
 			return nullptr;
 		}
 
@@ -239,19 +239,19 @@ resource::Asset *resource::Manager::openFile(StrView path, Access access_){
 	auto getPhysFSError = []{ return PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()); };
 
 	if(!PHYSFS_exists(pathStr.c_str())){
-		logErrorLn("File does not exist: {}", pathStr);
+		log::errorLn("File does not exist: {}", pathStr);
 		return nullptr;
 	}
 
 	PHYSFS_Stat info;
 
 	if(!PHYSFS_stat(pathStr.c_str(), &info)){
-		logErrorLn("Error in PHYSFS_stat: {}", getPhysFSError());
+		log::errorLn("Error in PHYSFS_stat: {}", getPhysFSError());
 		return nullptr;
 	}
 
 	if(info.filetype != PHYSFS_FILETYPE_REGULAR){
-		logErrorLn("Tried to open directory as file");
+		log::errorLn("Tried to open directory as file");
 		return nullptr;
 	}
 
@@ -259,7 +259,7 @@ resource::Asset *resource::Manager::openFile(StrView path, Access access_){
 				? PHYSFS_openRead(pathStr.c_str())
 				: PHYSFS_openWrite(pathStr.c_str());
 	if(!file){
-		logErrorLn("Error in PHYSFS_open: {}", getPhysFSError());
+		log::errorLn("Error in PHYSFS_open: {}", getPhysFSError());
 		return nullptr;
 	}
 
@@ -268,7 +268,7 @@ resource::Asset *resource::Manager::openFile(StrView path, Access access_){
 	buf.resize(info.filesize);
 
 	if(PHYSFS_readBytes(file, buf.data(), buf.size()) != buf.size()){
-		logErrorLn("Error in PHYSFS_open: {}", getPhysFSError());
+		log::errorLn("Error in PHYSFS_open: {}", getPhysFSError());
 		PHYSFS_close(file);
 		return nullptr;
 	}
@@ -289,7 +289,7 @@ resource::Asset *resource::Manager::openFile(StrView path, Access access_){
 
 	Asset::Category cat = Asset::Category::binary;
 
-	logLn("Loading file '{}' with MIME type '{}'", path, mimeType);
+	log::infoLn("Loading file '{}' with MIME type '{}'", path, mimeType);
 
 	Str filename = fs::path(path).filename().string<char, std::char_traits<char>, Allocator<char>>();
 
@@ -348,7 +348,7 @@ resource::Asset *resource::Manager::openFile(StrView path, Access access_){
 	auto ret = asset.get();
 
 	if(!ret){
-		logErrorLn("error opening asset");
+		log::errorLn("error opening asset");
 		return nullptr;
 	}
 
@@ -359,7 +359,7 @@ resource::Asset *resource::Manager::openFile(StrView path, Access access_){
 	auto fileFlags = (std::uint8_t)ret->access();
 	auto openFlags = (std::uint8_t)access_;
 	if((fileFlags & openFlags) != openFlags){
-		logErrorLn("Can not open file with access flags 0x{:h}", openFlags);
+		log::errorLn("Can not open file with access flags 0x{:h}", openFlags);
 		return nullptr;
 	}
 
@@ -369,13 +369,13 @@ resource::Asset *resource::Manager::openFile(StrView path, Access access_){
 resource::Plugin *resource::Manager::openPlugin(StrView path){
 	auto asset = openFile(path, Access::read);
 	if(!asset){
-		logErrorLn("Failed to open plugin file '{}'", path);
+		log::errorLn("Failed to open plugin file '{}'", path);
 		return nullptr;
 	}
 
 	auto ret = dynamic_cast<resource::Plugin*>(asset);
 	if(!ret){
-		logErrorLn("File is not a plugin: {}", path);
+		log::errorLn("File is not a plugin: {}", path);
 	}
 
 	return ret;
@@ -384,13 +384,13 @@ resource::Plugin *resource::Manager::openPlugin(StrView path){
 resource::Font *resource::Manager::openFont(StrView path){
 	auto asset = openFile(path, Access::read);
 	if(!asset){
-		logErrorLn("Failed to open font file '{}'", path);
+		log::errorLn("Failed to open font file '{}'", path);
 		return nullptr;
 	}
 
 	auto ret = dynamic_cast<resource::Font*>(asset);
 	if(!ret){
-		logErrorLn("File is not a font: {}", path);
+		log::errorLn("File is not a font: {}", path);
 	}
 
 	return ret;
@@ -399,13 +399,13 @@ resource::Font *resource::Manager::openFont(StrView path){
 resource::Model *resource::Manager::openModel(StrView path){
 	auto asset = openFile(path, Access::read);
 	if(!asset){
-		logErrorLn("Failed to open model file '{}'", path);
+		log::errorLn("Failed to open model file '{}'", path);
 		return nullptr;
 	}
 
 	auto ret = dynamic_cast<resource::ModelFile*>(asset);
 	if(!ret){
-		logErrorLn("File is not a model: {}", path);
+		log::errorLn("File is not a model: {}", path);
 	}
 
 	return ret;
@@ -421,7 +421,7 @@ UniquePtr<resource::Plugin> resource::Manager::createPluginFileAsset(Str path){
 	auto relPath = "./" + path;
 	auto lib = loadLibrary(relPath.c_str());
 	if(!lib){
-		logErrorLn("Error in loadLibrary: {}", loadLibraryError());
+		log::errorLn("Error in loadLibrary: {}", loadLibraryError());
 		return nullptr;
 	}
 
@@ -433,7 +433,7 @@ UniquePtr<resource::Plugin> resource::Manager::createPluginFileAsset(Str path){
 
 	if(!nameFnPtr || !authorFnPtr || !versionFnPtr || !kindFnPtr || !createFnPtr){
 		// not a plugin
-		logLn("Skipping non-plugin library '{}'", path);
+		log::infoLn("Skipping non-plugin library '{}'", path);
 		return nullptr;
 	}
 
@@ -464,7 +464,7 @@ UniquePtr<resource::Font> resource::Manager::createFontFileAsset(
 	FT_Face face;
 	FT_Error err = FT_Open_Face(gpweFtLib, &args, -1, &face);
 	if(err != FT_Err_Ok){
-		logErrorLn("Error in FT_Open_Face('{}')", path);
+		log::errorLn("Error in FT_Open_Face('{}')", path);
 		return nullptr;
 	}
 
@@ -478,7 +478,7 @@ UniquePtr<resource::Font> resource::Manager::createFontFileAsset(
 	for(FT_Long i = 0; i < numFaces; i++){
 		err = FT_Open_Face(gpweFtLib, &args, i, &face);
 		if(err != FT_Err_Ok){
-			logErrorLn("Error opening face {} of font '{}'", i, path);
+			log::errorLn("Error opening face {} of font '{}'", i, path);
 			continue;
 		}
 
@@ -502,7 +502,7 @@ UniquePtr<resource::Model> resource::Manager::createModelFileAsset(
 	);
 
 	if(!scene){
-		logErrorLn("Could not import model: {}", importer.GetErrorString());
+		log::errorLn("Could not import model: {}", importer.GetErrorString());
 		return nullptr;
 	}
 
@@ -513,7 +513,7 @@ UniquePtr<resource::Model> resource::Manager::createModelFileAsset(
 		auto mesh = scene->mMeshes[i];
 
 		if(mesh->mNumUVComponents[0] == 0){
-			logErrorLn("Could not import mesh '{}'", mesh->mName.C_Str());
+			log::errorLn("Could not import mesh '{}'", mesh->mName.C_Str());
 			continue;
 		}
 

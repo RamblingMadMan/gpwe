@@ -24,6 +24,11 @@ void TestApp::init(){
 	sys::camera()->translate({ 0.f, 0.f, -2.f });
 
 	shapes::Cube cube(2.f);
+	auto terrainMap = HeightMapShape::createSimpleTerrain();
+	auto terrainMesh = terrainMap.generateMesh(2.f);
+	terrainGroup = sys::renderManager()->createGroup(&terrainMesh);
+
+
 
 	cubeGroup = sys::renderManager()->createGroup(&cube);
 	cubeGroup->setNumInstances(0);
@@ -33,7 +38,7 @@ void TestApp::init(){
 		guyGroup = sys::renderManager()->createGroup(&guyMdl->meshes()[0]);
 	}
 	else{
-		logErrorLn("could not open '/Assets/Models/SphereGuy.fbx'");
+		log::warnLn("could not open '/Assets/Models/SphereGuy.fbx'");
 	}
 
 	inputs->onPumpEvents([this]{

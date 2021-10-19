@@ -1,7 +1,7 @@
 #ifndef EMBEDWIDGET_HPP
 #define EMBEDWIDGET_HPP
 
-#include "gpwe/Ticker.hpp"
+#include "gpwe/util/Ticker.hpp"
 
 #include <QOpenGLWidget>
 

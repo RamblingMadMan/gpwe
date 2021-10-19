@@ -2,12 +2,24 @@
 
 #include "glm/gtc/type_ptr.hpp"
 
-#include "Bullet3Dynamics/b3CpuRigidBodyPipeline.h"
-#include "Bullet3Collision/NarrowPhaseCollision/b3ConvexUtility.h"
-#include "Bullet3Collision/NarrowPhaseCollision/b3Config.h"
-#include "Bullet3Collision/BroadPhaseCollision/b3DynamicBvhBroadphase.h"
-#include "Bullet3Collision/NarrowPhaseCollision/b3CpuNarrowPhase.h"
 #include "Bullet3Geometry/b3ConvexHullComputer.h"
+
+#include "BulletCollision/CollisionShapes/btBoxShape.h"
+#include "BulletCollision/CollisionShapes/btCompoundShape.h"
+#include "BulletCollision/CollisionShapes/btConvexHullShape.h"
+#include "BulletCollision/CollisionShapes/btConvexPolyhedron.h"
+#include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
+
+#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
+
+#include "BulletCollision/BroadphaseCollision/btDbvtBroadphase.h"
+
+#include "BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h"
+
+#include "BulletDynamics/Dynamics/btRigidBody.h"
+
+#include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
+#include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
 
 #include "physics-bullet3.hpp"
 
@@ -16,75 +28,113 @@ GPWE_PHYSICS(gpwe::physics::bullet3::Manager, "Bullet Physics Plugin", "Hamsmith
 using namespace gpwe;
 using namespace gpwe::physics::bullet3;
 
-UniquePtr<physics::World> physics::bullet3::Manager::doCreateWorld(){
-	return makeUnique<World>();
+physics::bullet3::Manager::Manager(){
+	// TODO: inspect this monstrosity
+	btDefaultCollisionConstructionInfo info;
+
+	m_config = makeUnique<btSoftBodyRigidBodyCollisionConfiguration>(info);
+	m_dispatcher = makeUnique<btCollisionDispatcher>(m_config.get());
+	m_solver = makeUnique<btSequentialImpulseConstraintSolverMt>();
 }
 
-BodyShape::BodyShape(b3CpuRigidBodyPipeline *pipeline, const gpwe::VertexShape *shape)
-	: m_pipeline(pipeline)
+physics::bullet3::Manager::~Manager(){
+
+}
+
+UniquePtr<physics::World> physics::bullet3::Manager::doCreateWorld(){
+	return makeUnique<World>(m_config.get(), m_dispatcher.get(), m_solver.get());
+}
+
+BodyShape::BodyShape(const gpwe::VertexShape *shape)
 {
+	if(!shape){
+		log::errorLn("NULL passed as VertexShape to physics::BodyShape");
+		// TODO: throw exception?
+		return;
+	}
+
 	b3ConvexHullComputer computer;
 
-	computer.compute((const float*)shape->vertices(), sizeof(glm::vec3), shape->numPoints(), 0, 0);
+	Vector<b3Vector3> btVecs;
+	btVecs.reserve(shape->numPoints());
 
-	b3ConvexUtility convex;
-	convex.initialize();
-	convex.initializePolyhedralFeatures(&computer.vertices[0], computer.vertices.size());
+	std::transform(
+		shape->vertices(), shape->vertices() + shape->numPoints(),
+		std::back_inserter(btVecs),
+		[](const glm::vec3 &v){ return b3Vector3{v.x, v.y, v.z}; }
+	);
 
-	m_idx = pipeline->registerConvexPolyhedron(&convex);
+	computer.compute((const float*)btVecs.data(), sizeof(btVector3), btVecs.size(), 0, 0);
+
+	m_shape = makeUnique<btConvexHullShape>(&computer.vertices[0][0], computer.vertices.size());
 }
 
-BodyShape::~BodyShape(){
-	m_pipeline->removeConstraintByUid(m_idx);
+BodyShape::BodyShape(const gpwe::HeightMapShape *shape)
+{
+	if(!shape){
+		log::errorLn("NULL passed as HeightMapShape to physics::BodyShape");
+		return;
+	}
+
+	m_shape = makeUnique<btHeightfieldTerrainShape>(shape->width(), shape->height(), shape->values(), 0.f, 1.f, 1, false);
 }
 
-Body::Body(b3CpuRigidBodyPipeline *pipeline, const BodyShape *bodyShape)
-	: m_pipeline(pipeline)
-	, m_mass(1.f)
+BodyShape::~BodyShape(){}
+
+RigidBody::RigidBody(btSoftRigidDynamicsWorld *world, const BodyShape *bodyShape, float mass_)
+	: m_world(world)
+	, m_mass(mass_)
 	, m_pos(0.f, 0.f, 0.f)
 {
 	glm::vec3 orientation{0.f, 0.f, 0.f};
-	m_idx = pipeline->registerPhysicsInstance(
-		m_mass, glm::value_ptr(m_pos), glm::value_ptr(orientation),
-		bodyShape->pipelineIndex(), 0
+
+	btRigidBody::btRigidBodyConstructionInfo info(mass_, nullptr, bodyShape->collisionShape());
+
+	m_body = makeUnique<btRigidBody>(info);
+
+	world->addRigidBody(m_body.get());
+}
+
+RigidBody::~RigidBody(){
+	m_world->removeRigidBody(m_body.get());
+}
+
+World::World(btCollisionConfiguration *config, btDispatcher *dispatcher, btConstraintSolver *solver){
+	m_broadphase = makeUnique<btDbvtBroadphase>();
+	m_world = makeUnique<btSoftRigidDynamicsWorld>(
+		dispatcher,
+		m_broadphase.get(),
+		solver,
+		config
 	);
 }
 
-Body::~Body(){
-	m_pipeline->removeConstraintByUid(m_idx);
-}
-
-World::World()
-	: m_broadPhase(makeUnique<b3DynamicBvhBroadphase>(64))
-	, m_narrowPhase(makeUnique<b3CpuNarrowPhase>(b3Config{}))
-	, m_pipeline(makeUnique<b3CpuRigidBodyPipeline>(m_narrowPhase.get(), m_broadPhase.get(), b3Config{}))
-{
-}
-
 World::~World(){
-	// make sure pipeline is destroyed first
-	m_pipeline.reset();
 }
 
 void World::update(float dt){
-	m_pipeline->stepSimulation(dt);
+	const float physicsDt = 1.f/120.f;
+	m_world->stepSimulation(dt, 100, physicsDt);
 }
 
 UniquePtr<physics::BodyShape> World::doCreateBodyShape(const gpwe::Shape *shape){
-	auto mesh = dynamic_cast<const gpwe::VertexShape*>(shape);
-	if(!mesh){
-		logErrorLn("Bullet3 Physics Error: Only gpwe::VertexShape currently supported");
+	if(auto field = dynamic_cast<const gpwe::HeightMapShape*>(shape)){
+		return makeUnique<BodyShape>(field);
+	}
+	else if(auto mesh = dynamic_cast<const gpwe::VertexShape*>(shape)){
+		return makeUnique<BodyShape>(mesh);
+	}
+	else{
+		log::errorLn("Bullet3 Physics Error: Only VertexShape and HeightMapShape currently supported");
 		return nullptr;
 	}
-
-	return makeUnique<BodyShape>(m_pipeline.get(), mesh);
 }
 
-UniquePtr<physics::Body> World::doCreateBody(const physics::BodyShape *bodyShape){
+UniquePtr<physics::Body> World::doCreateBody(const physics::BodyShape *bodyShape, float mass){
 	auto derived = dynamic_cast<const BodyShape*>(bodyShape);
 	if(!derived){
 		return nullptr;
 	}
 
-	return makeUnique<Body>(m_pipeline.get(), derived);
+	return makeUnique<RigidBody>(m_world.get(), derived, mass);
 }

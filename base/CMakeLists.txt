@@ -2,6 +2,9 @@ find_package(LibMagic REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(FreeImage REQUIRED)
 
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+
 set(GPWE_BASE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "GPWE base directory")
 
 set(
@@ -12,7 +15,6 @@ set(
 	physics.cpp
 	Camera.cpp
 	Shape.cpp
-	Font.cpp
 	World.cpp
 )
 
@@ -35,7 +37,9 @@ target_include_directories(
 target_link_libraries(
 	gpwe-base PRIVATE
 	${CMAKE_DL_LIBS}
+	Threads::Threads
 	fmt
+	FastNoise::FastNoise2
 	glm::glm_static
 	physfs-static
 	${LIBMAGIC_LIBRARIES}

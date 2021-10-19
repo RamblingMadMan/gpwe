@@ -102,7 +102,7 @@ class SDLInputManager: public input::Manager{
 		}
 
 	protected:
-		void doPumpEvents() override{
+		void pumpEvents() override{
 			while(SDL_PollEvent(&ev)){
 				switch(ev.type){
 					case SDL_QUIT:{
@@ -157,7 +157,7 @@ SDL_GLContext gpweCtx = nullptr;
 
 int main(int argc, char *argv[]){
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0){
-		logErrorLn("{}", SDL_GetError());
+		log::errorLn("{}", SDL_GetError());
 		return 1;
 	}
 
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]){
 
 	gpweWin = SDL_CreateWindow("GPWE", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_OPENGL);
 	if(!gpweWin){
-		logErrorLn("{}", SDL_GetError());
+		log::errorLn("{}", SDL_GetError());
 		return 1;
 	}
 
@@ -188,14 +188,14 @@ int main(int argc, char *argv[]){
 
 	gpweCtx = SDL_GL_CreateContext(gpweWin);
 	if(!gpweCtx){
-		logErrorLn("{}", SDL_GetError());
+		log::errorLn("{}", SDL_GetError());
 		return 1;
 	}
 
 	std::atexit([]{ SDL_GL_DeleteContext(gpweCtx); });
 
 	if(SDL_GL_MakeCurrent(gpweWin, gpweCtx) != 0){
-		logErrorLn("{}", SDL_GetError());
+		log::errorLn("{}", SDL_GetError());
 		return 1;
 	}
 
@@ -212,8 +212,8 @@ int main(int argc, char *argv[]){
 	manager->setRenderArg((void*)loadGLFn);
 	manager->setRenderSize(1280, 720);
 
-	sys::setSysManager(std::move(manager));
-	sys::init(argc, argv);
+	manager->setArgs(argc, argv);
+	manager->init();
 
-	return sys::exec(std::bind(SDL_GL_SwapWindow, gpweWin));
+	return manager->exec(std::bind(SDL_GL_SwapWindow, gpweWin));
 }

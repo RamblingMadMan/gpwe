@@ -1,11 +1,11 @@
 #ifndef GPWE_RENDER_HPP
 #define GPWE_RENDER_HPP 1
 
+#include "util/Vector.hpp"
+
 #include "Version.hpp"
 #include "Manager.hpp"
-#include "Vector.hpp"
 #include "Shape.hpp"
-#include "Texture.hpp"
 #include "Camera.hpp"
 
 namespace gpwe::render{
@@ -100,7 +100,7 @@ namespace gpwe::render{
 			friend class Pipeline;
 	};
 
-	class Group: public gpwe::Managed<Manager, &Manager::doCreateGroup>{
+	class Group: public gpwe::Managed<&Manager::doCreateGroup>{
 		public:
 			virtual ~Group() = default;
 
@@ -113,14 +113,14 @@ namespace gpwe::render{
 			virtual void *dataPtr(std::uint32_t idx) = 0;
 	};
 
-	class Texture: public gpwe::Managed<Manager, &Manager::doCreateTexture>{
+	class Texture: public gpwe::Managed<&Manager::doCreateTexture>{
 		public:
 			using Kind = TextureKind;
 
 			virtual ~Texture() = default;
 	};
 
-	class Framebuffer: public gpwe::Managed<Manager, &Manager::doCreateFramebuffer>{
+	class Framebuffer: public gpwe::Managed<&Manager::doCreateFramebuffer>{
 		public:
 			enum class Mode{
 				write, read, readWrite,
@@ -138,7 +138,7 @@ namespace gpwe::render{
 			virtual Texture::Kind attachmentKind(std::uint32_t idx) const noexcept = 0;
 	};
 
-	class Program: public gpwe::Managed<Manager, &Manager::doCreateProgram>{
+	class Program: public gpwe::Managed<&Manager::doCreateProgram>{
 		public:
 			using Kind = ProgramKind;
 
@@ -147,7 +147,7 @@ namespace gpwe::render{
 			virtual Kind kind() const noexcept = 0;
 	};
 
-	class Pipeline: public gpwe::Managed<Manager, &Manager::doCreatePipeline>{
+	class Pipeline: public gpwe::Managed<&Manager::doCreatePipeline>{
 		public:
 			virtual ~Pipeline() = default;
 

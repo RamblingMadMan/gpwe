@@ -4,12 +4,13 @@
 #include <cstdint>
 #include <map>
 
+#include "util/Fn.hpp"
 #include "Manager.hpp"
 
 namespace gpwe::input{
 	class System{
 		public:
-			using ExitEventFn = std::function<void()>;
+			using ExitEventFn = Fn<void()>;
 
 			using ExitEventIter = List<ExitEventFn>::iterator;
 
@@ -59,7 +60,7 @@ namespace gpwe::input{
 
 	class Keyboard{
 		public:
-			using KeyEventFn = std::function<void(Key, bool)>;
+			using KeyEventFn = Fn<void(Key, bool)>;
 
 			using KeyEventIter = List<KeyEventFn>::iterator;
 
@@ -92,8 +93,8 @@ namespace gpwe::input{
 
 	class Mouse{
 		public:
-			using ButtonEventFn = std::function<void(MouseButton, bool)>;
-			using MoveEventFn = std::function<void(std::int32_t, std::int32_t)>;
+			using ButtonEventFn = Fn<void(MouseButton, bool)>;
+			using MoveEventFn = Fn<void(std::int32_t, std::int32_t)>;
 
 			using ButtonEventIter = List<ButtonEventFn>::iterator;
 			using MoveEventIter = List<MoveEventFn>::iterator;
@@ -142,18 +143,20 @@ namespace gpwe::input{
 
 	class Manager: public gpwe::Manager<Manager, ManagerKind::input>{
 		public:
-			using PumpEventFn = std::function<void()>;
+			using PumpEventFn = Fn<void()>;
 
 			using PumpEventIt = List<PumpEventFn>::iterator;
 
 			virtual ~Manager() = default;
 
-			void pumpEvents(){
+			void update(float dt) override{
+				(void)dt;
+
 				for(auto &&fn : m_pumpFns){
 					fn();
 				}
 
-				doPumpEvents();
+				pumpEvents();
 			}
 
 			template<typename Fn>
@@ -184,7 +187,7 @@ namespace gpwe::input{
 			}
 
 		protected:
-			virtual void doPumpEvents(){}
+			virtual void pumpEvents(){}
 
 			template<typename T>
 			static T *getFromList(List<T> &l, std::uint32_t idx){

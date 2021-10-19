@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-#include "gpwe/Str.hpp"
+#include "gpwe/util/Str.hpp"
 
 extern "C" const char _binary_${RES_NAME}_start[];
 extern "C" const char _binary_${RES_NAME}_end[];

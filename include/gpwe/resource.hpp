@@ -5,9 +5,10 @@
 #include <filesystem>
 #include <variant>
 
+#include "util/Str.hpp"
+#include "util/Map.hpp"
+
 #include "Manager.hpp"
-#include "Str.hpp"
-#include "Map.hpp"
 #include "Shape.hpp"
 #include "Texture.hpp"
 

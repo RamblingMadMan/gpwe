@@ -10,6 +10,6 @@ uniform vec4 colorMix;
 uniform sampler2D tex;
 
 void main(){
-	outAlbedo = vec4(colorMix);
+	outAlbedo = vec4(abs(norm_v.y) * colorMix);
 	outNormal = norm_v;
 }

@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
 	manager->setAppManager(gpwe::makeUnique<TestApp>());
 	manager->setInputManager(gpwe::makeUnique<InputManager>());
 
-	gpwe::sys::setSysManager(std::move(manager));
+	gpwe::sys::setManager(manager.get());
 
 	QApplication::setApplicationName("GPWE Embed Test");
 	QApplication::setOrganizationName("Hamsmith");

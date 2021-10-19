@@ -6,6 +6,7 @@
 #include <variant>
 #include <array>
 
+#include "meta.hpp"
 #include "Vector.hpp"
 
 namespace gpwe{
@@ -13,8 +14,10 @@ namespace gpwe{
 	class OctreeNode{
 		public:
 			using ChildIndices = std::array<std::int32_t, 8>;
-			struct LeafT{} Leaf;
-			struct BranchT{} Branch;
+			using LeafT = meta::tags::_0;
+			using BranchT = meta::tags::_1;
+			static LeafT Leaf;
+			static BranchT Branch;
 
 			OctreeNode(): m_val(std::in_place_type<std::monostate>){}
 

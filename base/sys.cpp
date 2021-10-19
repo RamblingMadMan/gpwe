@@ -16,6 +16,11 @@ using GPWEProc = void(*)();
 #define LIB_EXT ".so"
 #endif
 
+#include "FastNoise/FastNoise.h"
+
+#include "gpwe/util/Ticker.hpp"
+#include "gpwe/util/WorkQueue.hpp"
+
 #include "gpwe/config.hpp"
 #include "gpwe/log.hpp"
 #include "gpwe/input.hpp"
@@ -24,9 +29,7 @@ using GPWEProc = void(*)();
 #include "gpwe/physics.hpp"
 #include "gpwe/app.hpp"
 #include "gpwe/resource.hpp"
-#include "gpwe/Ticker.hpp"
 #include "gpwe/Camera.hpp"
-#include "gpwe/WorkQueue.hpp"
 
 #include "physfs.h"
 
@@ -47,16 +50,14 @@ FT_Library gpweFtLib = nullptr;
 
 magic_t gpweMagic = nullptr;
 
-UniquePtr<sys::Manager> gpweSysManager;
+thread_local sys::Manager *gpweSysManager = nullptr;
+
+log::Manager gpweDefaultLogManager;
 resource::Manager gpweResourceManager; // special, not a plugin
 
 gpwe::Camera gpweCamera(90.f, 1290.f/720.f);
 
-std::uint16_t gpweWidth, gpweHeight;
-
-std::atomic_bool gpweRunning = false;
-
-inline void logHeader(const Str &str){ gpwe::log("{:^30}\n\n", str); }
+inline void logHeader(const Str &str){ gpwe::log::out("{:^30}\n\n", str); }
 
 constexpr int apiNameColWidth = 16;
 constexpr int apiVersionColWidth = 30;
@@ -87,16 +88,16 @@ static void printVersions(){
 
 	logHeader("Version Info");
 
-	gpwe::log("┏{:━^{}}┯{:━^{}}┓\n", "┫ API ┣", apiNameColWidth + 2, "┫ Version ┣", apiVersionColWidth + 2);
+	gpwe::log::out("┏{:━^{}}┯{:━^{}}┓\n", "┫ API ┣", apiNameColWidth + 2, "┫ Version ┣", apiVersionColWidth + 2);
 
 	for(std::size_t i = 0; i < std::size(libs); i++){
 		auto name = libs[i];
 		auto &&version = versions[i];
 
-		gpwe::log("┃ {:<{}} │ {:<{}} ┃\n", name, apiNameColWidth, version, apiVersionColWidth);
+		gpwe::log::out("┃ {:<{}} │ {:<{}} ┃\n", name, apiNameColWidth, version, apiVersionColWidth);
 	}
 
-	gpwe::log("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
+	gpwe::log::out("┗{:━<{}}┷{:━<{}}┛\n\n", "", apiNameColWidth + 2, "", apiVersionColWidth + 2);
 }
 
 void sys::Manager::initBaseLibraries(){
@@ -163,33 +164,40 @@ void sys::Manager::initBaseLibraries(){
 		auto name = names[i];
 		auto &&fn = fns[i];
 
-		gpwe::log("{:<15}", fmt::format("{}...", name));
+		gpwe::log::out("{:<15}", fmt::format("{}...", name));
 
 		auto res = fn();
 		if(res){
-			gpwe::log("Error");
+			gpwe::log::out("Error");
 			if(!res.value().empty()){
-				gpwe::log(": {}\n", res.value());
+				gpwe::log::out(": {}\n", res.value());
 			}
 
 			std::exit(1);
 		}
 		else{
-			gpwe::log("Done\n");
+			gpwe::log::out("Done\n");
 		}
 	}
 
-	gpwe::log("\n");
+	gpwe::log::out("\n");
 }
 
 sys::Manager::Manager(){}
 
-sys::Manager::~Manager(){}
+sys::Manager::~Manager(){
+	m_appManager.reset();
+	m_renderManager.reset();
+	m_physicsManager.reset();
+	m_inputManager.reset();
+}
 
 void sys::Manager::loadPlugins(){
 	auto libIter = fs::directory_iterator();
 
 	auto curPath = fs::current_path();
+
+	gpwe::log::infoLn("Searching for plugins in \"{}\"", curPath.c_str());
 
 	for(auto it = fs::directory_iterator(curPath); it != fs::directory_iterator(); ++it){
 		auto path = it->path();
@@ -201,6 +209,8 @@ void sys::Manager::loadPlugins(){
 		if(!plugin){
 			continue;
 		}
+
+		gpwe::log::infoLn("Found plugin \"{}\"", plugin->name());
 
 		m_plugins.emplace_back(plugin);
 
@@ -232,39 +242,76 @@ void sys::Manager::loadPlugins(){
 
 std::atomic_flag sys::Manager::m_initFlag = ATOMIC_FLAG_INIT;
 
+int sys::Manager::exec(PresentFn presentFn){
+	Ticker ticker;
+
+	if(!m_running){
+		init();
+	}
+
+	while(m_running){
+		auto dt = ticker.tick();
+		update(dt);
+		presentFn();
+	}
+
+	m_appManager.reset();
+	m_renderManager.reset();
+	m_physicsManager.reset();
+	m_inputManager.reset();
+
+	gpweSysManager = this;
+
+	return 0;
+}
+
 void sys::Manager::update(float dt){
-	m_inputManager->pumpEvents();
+	m_inputManager->update(dt);
 	m_appManager->update(dt);
+	m_physicsManager->update(dt);
+	m_renderManager->update(dt);
 	m_renderManager->present(&gpweCamera);
 }
 
-void sys::Manager::setRenderManager(UniquePtr<RenderManager> manager){
+void sys::Manager::setLogManager(Ptr<LogManager> manager){
+	m_logManager = std::move(manager);
+}
+
+void sys::Manager::setRenderManager(Ptr<RenderManager> manager){
 	m_renderManager = std::move(manager);
 }
 
-void sys::Manager::setPhysicsManager(UniquePtr<PhysicsManager> manager){
+void sys::Manager::setPhysicsManager(Ptr<PhysicsManager> manager){
 	m_physicsManager = std::move(manager);
 }
 
-void sys::Manager::setInputManager(UniquePtr<InputManager> manager){
+void sys::Manager::setInputManager(Ptr<InputManager> manager){
 	m_inputManager = std::move(manager);
 }
 
-void sys::Manager::setAppManager(UniquePtr<AppManager> manager){
+void sys::Manager::setAppManager(Ptr<AppManager> manager){
 	m_appManager = std::move(manager);
+}
+
+void sys::Manager::exit(){
+	m_running = false;
 }
 
 void sys::Manager::init(){
 	if(m_initFlag.test_and_set()){
-		logErrorLn("sys::Manager::init() called more than once");
+		log::outLn("sys::Manager::init() called more than once");
 		return;
 	}
 
+	gpweSysManager = this;
+
+	//auto randNode = FastNoise::New<FastNoise::Value>(FastSIMD::Level_Null);
+
 	auto launchT = std::chrono::system_clock::now();
 	std::time_t launchTime = std::chrono::system_clock::to_time_t(launchT);
-	logLn("{}", std::ctime(&launchTime));
+	log::outLn("{}", std::ctime(&launchTime));
 
-	log("{:^{}}\n\n",
+	log::out("{:^{}}\n\n",
 		format(
 			"-- General Purpose World Engine v{}.{}.{}/{} --",
 			GPWE_VERSION_MAJOR, GPWE_VERSION_MINOR, GPWE_VERSION_PATCH, GPWE_VERSION_GIT
@@ -279,7 +326,7 @@ void sys::Manager::init(){
 		if(manager) return;
 
 		if(plugins.empty()){
-			logErrorLn("No {} plugins found", kind_);
+			log::outLn(log::Kind::error, "No {} plugins found", kind_);
 			std::exit(4);
 		}
 
@@ -295,10 +342,20 @@ void sys::Manager::init(){
 	m_renderManager->setArg(m_renderArg);
 	m_renderManager->setRenderSize(m_rW, m_rH);
 
+	// TODO: create, initialize, update and destroy managers on separate threads
+
+	/*
+	m_threads[(std::size_t)ThreadIdx::app]
+		= Thread([this]{ threadFn(m_appManager, m_workQueues[(std::size_t)ThreadIdx::app]); });
+	*/
+
+	if(m_logManager) m_logManager->init();
 	m_inputManager->init();
 	m_renderManager->init();
 	m_physicsManager->init();
 	m_appManager->init();
+
+	m_running = true;
 }
 
 void sys::Manager::setRenderSize(std::uint16_t w, std::uint16_t h){
@@ -309,45 +366,6 @@ void sys::Manager::setRenderSize(std::uint16_t w, std::uint16_t h){
 	}
 }
 
-void sys::setSysManager(UniquePtr<SysManager> manager){
-	gpweSysManager = std::move(manager);
-}
-
-void sys::init(int argc, char *argv[]){
-	if(!gpweSysManager){
-		logErrorLn("No system manager set");
-		std::exit(4);
-	}
-
-	gpweSysManager->setArgs(argc, argv);
-	gpweSysManager->init();
-}
-
-void sys::tick(float dt){
-	gpweSysManager->update(dt);
-}
-
-int sys::exec(PresentFn presentFn){
-	std::fflush(stdout);
-
-	Ticker ticker;
-
-	gpweRunning = true;
-
-	while(gpweRunning){
-		tick(ticker.tick());
-		presentFn();
-	}
-
-	gpweSysManager.reset();
-
-	return 0;
-}
-
-void sys::exit(){
-	gpweRunning = false;
-}
-
 void *sys::alloc(std::size_t n){
 	return std::malloc(n);
 }
@@ -356,14 +374,35 @@ void sys::free(void *ptr){
 	std::free(ptr);
 }
 
-Camera *sys::camera(){ return &gpweCamera; }
+void sys::setManager(SysManager *manager) noexcept{
+	gpweSysManager = manager;
+}
 
-sys::Manager *sys::sysManager(){ return gpweSysManager.get(); }
+void sys::update(float dt){
+	gpweSysManager->update(dt);
+}
 
-app::Manager *sys::appManager(){ return gpweSysManager->appManager(); }
+void sys::exit(){
+	gpweSysManager->exit();
+}
 
-render::Manager *sys::renderManager(){ return gpweSysManager->renderManager(); }
+Camera *sys::camera() noexcept{ return &gpweCamera; }
 
-input::Manager *sys::inputManager(){ return gpweSysManager->inputManager(); }
+sys::Manager *sys::manager() noexcept{ return gpweSysManager; }
 
-resource::Manager *sys::resourceManager(){ return &gpweResourceManager; }
+app::Manager *sys::appManager() noexcept{ return gpweSysManager->appManager(); }
+
+render::Manager *sys::renderManager() noexcept{ return gpweSysManager->renderManager(); }
+
+physics::Manager *sys::physicsManager() noexcept{ return gpweSysManager->physicsManager(); }
+
+log::Manager *sys::logManager() noexcept{
+	if(!gpweSysManager) return &gpweDefaultLogManager;
+
+	auto ret = gpweSysManager->logManager();
+	return ret ? ret : &gpweDefaultLogManager;
+}
+
+input::Manager *sys::inputManager() noexcept{ return gpweSysManager->inputManager(); }
+
+resource::Manager *sys::resourceManager() noexcept{ return &gpweResourceManager; }

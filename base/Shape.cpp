@@ -1,5 +1,7 @@
 #include <array>
 
+#include "FastNoise/FastNoise.h"
+
 #include "glm/gtx/normal.hpp"
 
 #include "gpwe/Shape.hpp"
@@ -137,6 +139,28 @@ shapes::Cuboid::Cuboid(HalfT, float hw, float hh, float hd)
 		)
 {}
 
+HeightMapShape HeightMapShape::createSimpleTerrain(std::uint16_t resolution, float scale){
+	// straight ripped from the FastNoise2 library tests
+	// https://github.com/Auburn/FastNoise2/blob/master/tests/FastNoiseCpp11Include.cpp
+	auto noiseNode = FastNoise::New<FastNoise::FractalFBm>();
+
+	noiseNode->SetSource(FastNoise::New<FastNoise::Simplex>());
+	noiseNode->SetGain(FastNoise::New<FastNoise::Value>());
+
+	Vector<float> heights;
+	heights.resize(resolution * resolution);
+
+	noiseNode->GenUniformGrid2D(heights.data(), 0, 0, resolution, resolution, 0.02f, 1337);
+
+	std::transform(
+		begin(heights), end(heights),
+		begin(heights),
+		[scale](float y){ return y * scale; }
+	);
+
+	return HeightMapShape(resolution, resolution, std::move(heights));
+}
+
 shapes::TriangleMesh HeightMapShape::generateMesh(float scale) const{
 	const float aspect = m_w > m_h
 						 ? float(m_w) / float(m_h)
@@ -165,12 +189,63 @@ shapes::TriangleMesh HeightMapShape::generateMesh(float scale) const{
 	const float xStep = 1.f / m_w;
 
 	for(std::uint16_t y = 0; y < m_h; y++){
-		const float yOff = (y * yStep) - 0.5f;
+		const std::uint16_t yIdx = y * m_w;
+		const float yRel = y * yStep;
+		const float yOff = yRel - 0.5f;
 		for(std::uint16_t x = 0; x < m_w; x++){
-			const float xOff = (x * xStep) - 0.5f;
-			verts.emplace_back(xOff, 0.f, yOff);
+			const std::uint16_t idx = yIdx + x;
+			const float xRel = x * xStep;
+			const float xOff = xRel - 0.5f;
+			verts.emplace_back(xOff * dimX, m_values[idx], yOff * dimY);
+			norms.emplace_back(glm::vec3(0.f, 0.f, 0.f)); // Zeroed for face average
+			uvs.emplace_back(glm::vec2(xRel, 1.f - yRel));
 		}
 	}
 
-	throw std::runtime_error("Heightmap mesh generation not implemented");
+	struct Tri{
+		std::uint32_t indices[3];
+		glm::vec3 normal;
+	};
+
+	Vector<Tri> tris;
+	tris.reserve(m_w * m_h * 3);
+
+	std::uint32_t y0Idx = 0;
+
+	for(std::uint16_t y = 1; y < m_h; y++){
+		const std::uint32_t y1Idx = y * m_w;
+
+		for(std::uint16_t x = 0; x < (m_w - 1); x++){
+			std::uint32_t i0 = y0Idx + x;
+			std::uint32_t i1 = y0Idx + x + 1;
+			std::uint32_t i2 = y1Idx + x + 1;
+			std::uint32_t i3 = y1Idx + x;
+
+			const auto &p0 = verts[i0];
+			const auto &p1 = verts[i1];
+			const auto &p2 = verts[i2];
+			const auto &p3 = verts[i3];
+
+			Tri f0{ .indices = { i0, i1, i2 }, .normal = glm::triangleNormal(p2, p1, p0) };
+			Tri f1{ .indices = { i0, i2, i3 }, .normal = glm::triangleNormal(p3, p2, p0) };
+
+			tris.push_back(f0);
+			tris.push_back(f1);
+		}
+
+		y0Idx = y1Idx;
+	}
+
+	for(auto &&tri : tris){
+		for(auto idx : tri.indices){
+			indices.emplace_back(idx);
+			norms[idx] += tri.normal;
+		}
+	}
+
+	for(auto &&norm : norms){
+		norm = glm::normalize(norm);
+	}
+
+	return shapes::TriangleMesh(std::move(verts), std::move(norms), std::move(uvs), std::move(indices));
 }

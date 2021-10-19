@@ -1,8 +1,8 @@
 #ifndef GPWE_MANAGER_HPP
 #define GPWE_MANAGER_HPP 1
 
+#include "util/List.hpp"
 #include "Version.hpp"
-#include "List.hpp"
 
 namespace gpwe{
 	namespace detail{
@@ -16,24 +16,24 @@ namespace gpwe{
 		};
 	}
 
-	template<typename ParentT, auto CreateFn>
+	template<auto CreateFn>
 	class Managed{
 		public:
-			using Parent = ParentT;
-
 			static constexpr auto createFn() noexcept{ return CreateFn; }
 
 			virtual ~Managed() = default;
 	};
 
-	enum class ManagerKind: std::uint8_t{
+	enum class ManagerKind: std::uint16_t{
 		data = 1,
 		plugin = 1 << 1,
 		app = 1 << 2,
 		render = 1 << 3,
 		physics = 1 << 4,
 		input = 1 << 5,
-		sys = 1 << 6
+		sys = 1 << 6,
+		log = 1 << 7,
+		world = 1 << 8
 	};
 
 	class ManagerBase{
@@ -56,7 +56,13 @@ namespace gpwe{
 			T *create(Args &&... args){
 				auto self = static_cast<Derived*>(this);
 				constexpr auto createFn = T::createFn();
-				return insertUnique((self->*createFn)(std::forward<Args>(args)...));
+
+				if constexpr(std::is_member_function_pointer_v<decltype(createFn)>){
+					return insertUnique((self->*createFn)(std::forward<Args>(args)...));
+				}
+				else{
+					return insertUnique(createFn(std::forward<Args>(args)...));
+				}
 			}
 
 			template<typename T>
@@ -98,25 +104,9 @@ namespace gpwe{
 			bool eraseUnique(T *ptr){
 				if(!ptr) return true;
 
-				auto &&ptrs = this->detail::ManagerStorage<T>::ptrs;
+				auto &&ptrs = this->detail::ManagerStorage<T>::ptrs();
 
-				auto it = binary_find(
-					ptrs.begin(), ptrs.end(), ptr,
-					[](auto &&lhs, auto &&rhs){
-						using Lhs = std::remove_cv_t<std::remove_reference_t<decltype(lhs)>>;
-						using Rhs = std::remove_cv_t<std::remove_reference_t<decltype(rhs)>>;
-
-						if constexpr(std::is_same_v<Lhs, Rhs>){
-							return lhs < rhs;
-						}
-						else if constexpr(std::is_same_v<Lhs, UniquePtr<T>>){
-							return lhs.get() < rhs;
-						}
-						else if constexpr(std::is_same_v<Rhs, UniquePtr<T>>){
-							return lhs < rhs.get();
-						}
-					}
-				);
+				auto it = binary_find(ptrs.begin(), ptrs.end(), ptr);
 
 				if(it != ptrs.end()){
 					ptrs.erase(it);

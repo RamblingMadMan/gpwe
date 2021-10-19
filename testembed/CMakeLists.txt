@@ -27,4 +27,4 @@ target_link_libraries(
 	Qt::Core Qt::Widgets
 )
 
-gpwe_embed_plugins(gpwe-test-embed renderer-gl43)
+gpwe_embed_plugins(gpwe-test-embed renderer-gl43 physics-bullet3)

@@ -20,3 +20,6 @@
 	path = deps/bullet3
 	url = https://github.com/bulletphysics/bullet3.git
 	shallow = true
+[submodule "deps/FastNoise2"]
+	path = deps/FastNoise2
+	url = https://github.com/Auburn/FastNoise2.git

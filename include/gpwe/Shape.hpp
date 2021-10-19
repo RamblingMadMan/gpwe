@@ -7,7 +7,8 @@
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
 
-#include "Vector.hpp"
+#include "util/Vector.hpp"
+#include "log.hpp"
 
 namespace gpwe{
 	class Shape{
@@ -177,19 +178,35 @@ namespace gpwe{
 
 	class HeightMapShape: public Shape{
 		public:
-			HeightMapShape(std::uint32_t w, std::uint32_t h, const float *vals) noexcept
-				: m_w(w), m_h(h), m_values(vals, vals + (w * h)){}
+			HeightMapShape(std::uint16_t w, std::uint16_t h, Vector<float> values_) noexcept
+				: m_w(w), m_h(h), m_values(std::move(values_))
+			{
+				if(m_values.size() == 0){
+					m_values.resize(w*h, 0.f);
+				}
+				else if(m_values.size() != w * h){
+					log::errorLn(
+						"invalid size {}x{}={} given for vector of size {}",
+						w, h, w * h, m_values.size()
+					);
+
+					m_values.clear();
+					m_values.resize(w*h, 0.f);
+				}
+			}
+
+			static HeightMapShape createSimpleTerrain(std::uint16_t resolution = 256, float scale = 100.f);
 
 			Kind kind() const noexcept override{ return Kind::heightmap; }
 
-			std::uint32_t width() const noexcept{ return m_w; }
-			std::uint32_t height() const noexcept{ return m_h; }
+			std::uint16_t width() const noexcept{ return m_w; }
+			std::uint16_t height() const noexcept{ return m_h; }
 			const float *values() const noexcept{ return m_values.data(); }
 
-			shapes::TriangleMesh generateMesh(float scale = 1.f) const;
+			shapes::TriangleMesh generateMesh(float xyScale = 100.f) const;
 
 		private:
-			std::uint32_t m_w, m_h;
+			std::uint16_t m_w, m_h;
 			Vector<float> m_values;
 	};
 }
