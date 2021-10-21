@@ -16,6 +16,7 @@ class TestApp: public gpwe::app::Manager{
 
 	private:
 		gpwe::render::Group *terrainGroup, *cubeGroup, *guyGroup;
+		gpwe::render::Instance *terrainInst;
 		bool rotateCam = false;
 		glm::vec3 rot = { 0.f, 0.f, 0.f }, movement = { 0.f, 0.f, 0.f };
 

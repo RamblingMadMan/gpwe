@@ -14,22 +14,10 @@ namespace gpwe{
 		public:
 			Thread() noexcept = default;
 
-			template<typename F>
-			explicit Thread(F &&f)
-				: m_fn(std::forward<F>(f))
-			{
-				pthread_t id;
-				auto err = pthread_create(&id, nullptr, pthread_routine, &m_fn);
-				if(err){
-					log::errorLn("Error in pthread_create: {}", strerror(err));
-					return;
-				}
-
-				m_thd = id;
-			}
+			explicit Thread(Fn<void()> f);
 
 			Thread(Thread &&other) noexcept
-				: m_thd(other.m_thd.exchange(0))
+				: m_id(other.m_id.exchange(0))
 				, m_fn(std::move(other.m_fn))
 			{}
 
@@ -39,20 +27,20 @@ namespace gpwe{
 
 			Thread &operator=(Thread &&other) noexcept{
 				if(&other != this){
-					auto otherId = other.m_thd.exchange(0);
+					auto otherId = other.m_id.exchange(0);
 					join();
-					m_thd = otherId;
+					m_id = otherId;
+					m_fn = std::move(other.m_fn);
 				}
 
 				return *this;
 			}
 
-			void join(){
-				if(auto id = m_thd.exchange(0)){
-					void *ret;
-					pthread_join(id, &ret);
-				}
-			}
+			Str name() const noexcept;
+
+			void setName(StrView name_);
+
+			void join();
 
 		private:
 			static void *pthread_routine(void *arg){
@@ -61,7 +49,7 @@ namespace gpwe{
 				return nullptr;
 			}
 
-			std::atomic<pthread_t> m_thd = 0;
+			std::atomic<std::uint64_t> m_id = 0;
 			Fn<void()> m_fn;
 	};
 }

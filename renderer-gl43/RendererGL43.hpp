@@ -6,24 +6,37 @@
 namespace gpwe{
 	class RenderGroupGL43: public render::Group{
 		public:
-			explicit RenderGroupGL43(std::uint32_t numShapes, const VertexShape **shapes, std::uint32_t n = 1);
+			explicit RenderGroupGL43(
+				Vector<render::InstanceData> instDataInfo,
+				std::uint32_t numShapes, const VertexShape **shapes,
+				std::uint32_t n = 1
+			);
+
 			~RenderGroupGL43();
 
 			void draw() const noexcept override;
-			void setNumInstances(std::uint32_t n) override;
 
-			std::uint32_t numInstances() const noexcept override;
+			std::uint32_t numInstances() const noexcept;
 
 		protected:
 			void *dataPtr(std::uint32_t idx) override;
 
+			UniquePtr<render::Instance> doCreateInstance() override;
+
 		private:
 			std::uint32_t m_numShapes;
 			std::uint32_t m_vao;
-			std::uint32_t m_bufs[5];
-			void *m_cmdPtr;
+			std::uint32_t m_bufs[6];
+			void *m_cmdPtr, *m_dataPtr;
+			std::uint32_t m_numAllocated = 0;
 
 			friend class RendererGL43;
+	};
+
+	class RenderInstanceGL43: public render::Instance{
+		public:
+			RenderInstanceGL43(RenderGroupGL43 *group_, std::uint32_t idx_) noexcept
+				: Instance(group_, idx_){}
 	};
 
 	class RenderProgramGL43: public render::Program{
@@ -91,7 +104,10 @@ namespace gpwe{
 			void present(const Camera *cam) noexcept override;
 
 		protected:
-			UniquePtr<render::Group> doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes) override;
+			UniquePtr<render::Group> doCreateGroup(
+				std::uint32_t numShapes, const VertexShape **shapes,
+				Vector<render::InstanceData> instanceDataInfo
+			) override;
 
 			UniquePtr<render::Texture> doCreateTexture(std::uint16_t w, std::uint16_t h, render::TextureKind, const void *pixels) override{
 				return nullptr;

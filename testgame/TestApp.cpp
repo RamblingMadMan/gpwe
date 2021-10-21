@@ -27,11 +27,9 @@ void TestApp::init(){
 	auto terrainMap = HeightMapShape::createSimpleTerrain();
 	auto terrainMesh = terrainMap.generateMesh(2.f);
 	terrainGroup = sys::renderManager()->createGroup(&terrainMesh);
-
-
+	terrainInst = terrainGroup->create<gpwe::render::Instance>();
 
 	cubeGroup = sys::renderManager()->createGroup(&cube);
-	cubeGroup->setNumInstances(0);
 
 	auto guyMdl = resources->openModel("/Assets/Models/SphereGuy.fbx");
 	if(guyMdl){

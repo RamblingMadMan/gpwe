@@ -42,6 +42,76 @@ namespace gpwe::render{
 		count
 	};
 
+	enum class DataType{
+		nat8, nat16, nat32,
+		int8, int16, int32,
+		float32,
+
+		vec2, vec3, vec4,
+		mat2, mat3, mat4,
+
+		count
+	};
+
+	inline std::size_t dataTypeSize(DataType type) noexcept{
+		using Type = DataType;
+		switch(type){
+		#define CASEMAP(a, b) case Type::a: return b
+			CASEMAP(nat8, 1);
+			CASEMAP(nat16, 2);
+			CASEMAP(nat32, 4);
+			CASEMAP(int8, 1);
+			CASEMAP(int16, 2);
+			CASEMAP(int32, 4);
+			CASEMAP(float32, 4);
+			CASEMAP(vec2, sizeof(Vec2));
+			CASEMAP(vec3, sizeof(Vec3));
+			CASEMAP(vec4, sizeof(Vec4));
+			CASEMAP(mat2, sizeof(Mat2));
+			CASEMAP(mat3, sizeof(Mat3));
+			CASEMAP(mat4, sizeof(Mat4));
+			default: return 0;
+		#undef CASEMAP
+		}
+	}
+
+	inline std::size_t dataTypeNumComponents(DataType type) noexcept{
+		using Type = DataType;
+		switch(type){
+		#define CASEMAP(a, b) case Type::a: return b
+			CASEMAP(nat8, 1);
+			CASEMAP(nat16, 1);
+			CASEMAP(nat32, 1);
+			CASEMAP(int8, 1);
+			CASEMAP(int16, 1);
+			CASEMAP(int32, 1);
+			CASEMAP(float32, 1);
+			CASEMAP(vec2, 2);
+			CASEMAP(vec3, 3);
+			CASEMAP(vec4, 4);
+			CASEMAP(mat2, 2*2);
+			CASEMAP(mat3, 3*3);
+			CASEMAP(mat4, 4*4);
+			default: return 0;
+		#undef CASEMAP
+		}
+	}
+
+	class InstanceData{
+		public:
+			DataType type() const noexcept{ return m_type; }
+			std::size_t size() const noexcept{ return m_len * dataTypeSize(m_type); }
+			std::uint32_t len() const noexcept{ return m_len; }
+
+		protected:
+			InstanceData(DataType type_, std::uint32_t len_ = 1) noexcept
+				: m_type(type_), m_len(len_){}
+
+		private:
+			DataType m_type;
+			std::uint32_t m_len;
+	};
+
 	class Manager:
 			public gpwe::Manager<
 				Manager, ManagerKind::render,
@@ -55,8 +125,11 @@ namespace gpwe::render{
 
 			void setArg(void *arg) noexcept{ m_arg = arg; }
 
-			Group *createGroup(const VertexShape *shape){
-				return create<Group>(1, &shape);
+			Group *createGroup(
+				const VertexShape *shape,
+				Vector<InstanceData> instanceDataInfo = {}
+			){
+				return create<Group>(1, &shape, std::move(instanceDataInfo));
 			}
 
 			void setRenderSize(std::uint16_t w, std::uint16_t h){
@@ -70,7 +143,8 @@ namespace gpwe::render{
 
 		protected:
 			virtual UniquePtr<Group> doCreateGroup(
-				std::uint32_t numShapes, const VertexShape **shapes
+				std::uint32_t numShapes, const VertexShape **shapes,
+				Vector<InstanceData> instanceDataInfo = {}
 			) = 0;
 
 			virtual UniquePtr<Texture> doCreateTexture(
@@ -100,17 +174,58 @@ namespace gpwe::render{
 			friend class Pipeline;
 	};
 
-	class Group: public gpwe::Managed<&Manager::doCreateGroup>{
+	class Instance;
+
+	class Group:
+			public gpwe::Managed<&Manager::doCreateGroup>,
+			public gpwe::Manager<Group, ManagerKind::data, Instance>
+	{
 		public:
 			virtual ~Group() = default;
 
 			virtual void draw() const noexcept = 0;
-			virtual void setNumInstances(std::uint32_t n) = 0;
 
-			virtual std::uint32_t numInstances() const noexcept = 0;
+			std::size_t instanceDataSize() const noexcept{
+				return m_totalInstanceDataSize;
+			}
+
+			const Vector<InstanceData> &instanceDataInfo() const noexcept{
+				return m_instanceDataInfo;
+			}
 
 		protected:
+			Group(Vector<InstanceData> dataInfo = {}) noexcept
+				: m_instanceDataInfo(std::move(dataInfo))
+				, m_totalInstanceDataSize(0)
+			{
+				for(auto &&info : m_instanceDataInfo){
+					m_totalInstanceDataSize += info.size();
+				}
+			}
+
+			virtual UniquePtr<Instance> doCreateInstance() = 0;
 			virtual void *dataPtr(std::uint32_t idx) = 0;
+
+		private:
+			Vector<InstanceData> m_instanceDataInfo;
+			std::size_t m_totalInstanceDataSize;
+
+			friend class Instance;
+	};
+
+	class Instance: public gpwe::Managed<&Group::doCreateInstance>{
+		public:
+			Group *group() noexcept{ return m_group; }
+			const Group *group() const noexcept{ return m_group; }
+
+			std::uint32_t index() const noexcept{ return m_idx; }
+
+		protected:
+			Instance(Group *group_, std::uint32_t idx_)
+				: m_group(group_), m_idx(idx_){}
+
+			Group *m_group;
+			std::uint32_t m_idx;
 	};
 
 	class Texture: public gpwe::Managed<&Manager::doCreateTexture>{

@@ -3,6 +3,7 @@
 #include <functional>
 #include <chrono>
 #include <filesystem>
+#include <list>
 
 namespace fs = std::filesystem;
 
@@ -12,6 +13,8 @@ using GPWEProc = void(*)();
 #define LIB_PREFIX
 #define LIB_EXT ".dll"
 #else
+#include <unistd.h>
+#include <sys/mman.h>
 #define LIB_PREFIX "lib"
 #define LIB_EXT ".so"
 #endif
@@ -366,12 +369,250 @@ void sys::Manager::setRenderSize(std::uint16_t w, std::uint16_t h){
 	}
 }
 
+class Memory{
+	public:
+		Memory(void *ptr_, std::size_t size_)
+			: m_ptr(ptr_), m_len(size_){}
+
+		void *ptr() noexcept{ return m_ptr; }
+		const void *ptr() const noexcept{ return m_ptr; }
+
+		std::size_t size() const noexcept{ return m_len; }
+
+		void setPtr(void *ptr_) noexcept{ m_ptr = ptr_; }
+		void setSize(std::size_t size_) noexcept{ m_len = size_; }
+
+	private:
+		void *m_ptr;
+		std::size_t m_len;
+};
+
+class MemoryCompare{
+	public:
+		template<typename Lhs, typename Rhs>
+		bool operator()(const Lhs &lhs, const Rhs &rhs){
+			return getPtr(lhs) < getPtr(rhs);
+		}
+
+	private:
+		template<typename Mem>
+		static void *getPtr(Mem mem){
+			if constexpr(std::is_same_v<void*, Mem>){
+				return mem;
+			}
+			else{
+				return mem.ptr();
+			}
+		}
+};
+
+class MemoryRegion{
+	public:
+		MemoryRegion(): MemoryRegion(nullptr, 0){}
+
+		MemoryRegion(void *base_, std::size_t len_)
+			: m_base(base_), m_len(len_)
+			, m_freeMems{ Memory(base_, len_) }{}
+
+		void *base() noexcept{ return m_base; }
+
+		std::size_t size() const noexcept{ return m_len; }
+
+		Memory *allocMemory(std::size_t len, std::size_t align_){
+			for(auto it = m_freeMems.begin(); it != m_freeMems.end(); ++it){
+				auto &&mem = *it;
+
+				if(mem.size() < len) continue;
+
+				void *memPtr = mem.ptr();
+				std::size_t memLen = mem.size();
+
+				if(!std::align(align_, len, memPtr, memLen)){
+					continue;
+				}
+
+				if(memPtr != mem.ptr()){
+					auto newFreeLen = (std::uintptr_t)memPtr - (std::uintptr_t)mem.ptr();
+					m_freeMems.insert(it, Memory(mem.ptr(), newFreeLen));
+
+					mem.setPtr(memPtr);
+					mem.setSize(memLen);
+				}
+
+				auto rem = mem.size() - len;
+
+				auto insertIt = std::lower_bound(
+					m_usedMems.begin(), m_usedMems.end(),
+					mem.ptr(),
+					MemoryCompare{}
+				);
+
+				auto ret = m_usedMems.insert(insertIt, Memory(mem.ptr(), len));
+
+				if(rem > 0){
+					auto newFree = reinterpret_cast<char*>(mem.ptr()) + len;
+					mem.setPtr(newFree);
+					mem.setSize(rem);
+				}
+				else{
+					m_freeMems.erase(it);
+				}
+
+				return &(*ret);
+			}
+
+			return nullptr;
+		}
+
+		bool freeMemory(void *ptr){
+			auto it = binaryFind(m_usedMems, ptr, MemoryCompare{});
+			if(it == m_usedMems.end()) return false;
+
+			auto insertIt = std::upper_bound(
+				m_freeMems.begin(), m_freeMems.end(),
+				*it,
+				MemoryCompare{}
+			);
+
+			auto freeMemIt = m_freeMems.insert(insertIt, *it);
+
+			auto nextFreeMemIt = freeMemIt;
+			++nextFreeMemIt;
+
+			while(
+				nextFreeMemIt != m_freeMems.end() &&
+				nextFreeMemIt->ptr() == ((char*)freeMemIt->ptr() + freeMemIt->size())
+			){
+				freeMemIt->setSize(freeMemIt->size() + nextFreeMemIt->size());
+				m_freeMems.erase(nextFreeMemIt);
+				++nextFreeMemIt;
+			}
+
+			auto prevFreeMemIt = std::reverse_iterator{freeMemIt};
+			++prevFreeMemIt;
+
+			while(
+				prevFreeMemIt != std::reverse_iterator(m_freeMems.begin()--) &&
+				freeMemIt->ptr() == ((char*)prevFreeMemIt->ptr() + prevFreeMemIt->size())
+			){
+				freeMemIt->setPtr(prevFreeMemIt->ptr());
+				freeMemIt->setSize(freeMemIt->size() + prevFreeMemIt->size());
+				m_freeMems.erase(prevFreeMemIt.base());
+				++prevFreeMemIt;
+			}
+
+			return true;
+		}
+
+		bool freeMemory(Memory mem){
+			return freeMemory(mem.ptr());
+		}
+
+	private:
+		void *m_base;
+		std::size_t m_len;
+		std::list<Memory> m_freeMems;
+		std::list<Memory> m_usedMems;
+};
+
+class PageAllocator{
+	public:
+		explicit PageAllocator(std::size_t pageSize_ = getPageSize())
+			: m_pageSize(pageSize_)
+		{
+			m_regions.emplace_back(allocPages(1));
+		}
+
+		~PageAllocator(){
+			for(auto &&region : m_regions){
+				freePages(region);
+			}
+		}
+
+		Memory *alloc(std::size_t len, std::size_t align_){
+			// what's the correct log formula here?
+			// ceil ((log len)/(log pageSize)) ?
+
+			// TODO: think about a reasonable value for this
+			const std::size_t maxDepth = 6;
+
+			for(std::size_t i = 0; i < maxDepth; i++){
+				if(m_regions.size() == i){
+					m_regions.emplace_back(allocPages((1ul << i) * m_pageSize));
+				}
+
+				auto &&region = m_regions[i];
+
+				auto ret = region.allocMemory(len, align_);
+				if(ret){
+					m_ptrRegions[ret] = &region;
+					return ret;
+				}
+			}
+
+			return nullptr;
+		}
+
+		void free(void *ptr){
+			if(!ptr) return;
+
+			auto it = m_ptrRegions.find(ptr);
+			if(it == m_ptrRegions.end()){
+				return;
+			}
+
+			it->second->freeMemory(ptr);
+		}
+
+	private:
+		static long getPageSize(){
+			return sysconf(_SC_PAGESIZE);
+		}
+
+		MemoryRegion allocPages(std::size_t n){
+			n = std::max<std::size_t>(1, n);
+			auto len = n * m_pageSize;
+			auto mem = mmap(
+				nullptr, len,
+				PROT_READ | PROT_WRITE,
+				MAP_PRIVATE | MAP_ANONYMOUS,
+				0, 0
+			);
+
+			if(mem == MAP_FAILED){
+				log::errorLn("Error in mmap: {}", strerror(errno));
+				std::exit(1);
+				//return MemoryRegion(nullptr, 0);
+			}
+
+			return MemoryRegion{ mem, len };
+		}
+
+		void freePages(MemoryRegion region){
+			if(munmap(region.base(), region.size()) != 0){
+				log::warnLn("Error in munmap: {}", strerror(errno));
+			}
+		}
+
+		std::size_t m_pageSize;
+
+		// next is double of previous region size
+		// first region is a single page
+		std::vector<MemoryRegion> m_regions;
+
+		std::map<void*, MemoryRegion*> m_ptrRegions;
+
+		std::mutex m_mut;
+} static pageAllocator;
+
 void *sys::alloc(std::size_t n){
 	return std::malloc(n);
+	//return pageAllocator.alloc(n, 1);
 }
 
 void sys::free(void *ptr){
 	std::free(ptr);
+	//pageAllocator.free(ptr);
 }
 
 void sys::setManager(SysManager *manager) noexcept{

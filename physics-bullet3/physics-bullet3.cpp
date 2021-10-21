@@ -1,6 +1,10 @@
+#include "gpwe/util/WorkQueue.hpp"
+#include "gpwe/util/Thread.hpp"
 #include "gpwe/log.hpp"
 
 #include "glm/gtc/type_ptr.hpp"
+
+#include "LinearMath/btThreads.h"
 
 #include "Bullet3Geometry/b3ConvexHullComputer.h"
 
@@ -35,6 +39,19 @@ physics::bullet3::Manager::Manager(){
 	m_config = makeUnique<btSoftBodyRigidBodyCollisionConfiguration>(info);
 	m_dispatcher = makeUnique<btCollisionDispatcher>(m_config.get());
 	m_solver = makeUnique<btSequentialImpulseConstraintSolverMt>();
+
+	btITaskScheduler *scheduler = btGetTBBTaskScheduler();
+	if(!scheduler){
+		scheduler = btGetOpenMPTaskScheduler();
+		if(!scheduler){
+			scheduler = btGetPPLTaskScheduler();
+			if(!scheduler){
+				scheduler = btGetSequentialTaskScheduler();
+			}
+		}
+	}
+
+	btSetTaskScheduler(scheduler);
 }
 
 physics::bullet3::Manager::~Manager(){

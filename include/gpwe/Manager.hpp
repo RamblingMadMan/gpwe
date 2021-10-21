@@ -1,6 +1,7 @@
 #ifndef GPWE_MANAGER_HPP
 #define GPWE_MANAGER_HPP 1
 
+#include "util/algo.hpp"
 #include "util/List.hpp"
 #include "Version.hpp"
 
@@ -106,7 +107,7 @@ namespace gpwe{
 
 				auto &&ptrs = this->detail::ManagerStorage<T>::ptrs();
 
-				auto it = binary_find(ptrs.begin(), ptrs.end(), ptr);
+				auto it = binaryFind(ptrs, ptr);
 
 				if(it != ptrs.end()){
 					ptrs.erase(it);
@@ -114,14 +115,6 @@ namespace gpwe{
 				}
 
 				return false;
-			}
-
-			template<class Iter, class T, class Compare>
-			static inline Iter binary_find(Iter begin, Iter end, T val, Compare cmp){
-				Iter i = std::lower_bound(begin, end, val, cmp);
-
-				if(i != end && !cmp(val, *i)) return i;
-				else return end;
 			}
 	};
 }

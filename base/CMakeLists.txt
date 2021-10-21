@@ -9,6 +9,7 @@ set(GPWE_BASE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "GPWE base directory"
 
 set(
 	GPWE_BASE_SOURCES
+	Thread.cpp
 	sys.cpp
 	input.cpp
 	resource.cpp

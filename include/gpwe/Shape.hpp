@@ -4,20 +4,20 @@
 #include <cstdint>
 #include <array>
 
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
-
 #include "util/Vector.hpp"
+#include "util/math.hpp"
 #include "log.hpp"
 
 namespace gpwe{
+	enum class ShapeKind{
+		vertex, heightmap,
+
+		count
+	};
+
 	class Shape{
 		public:
-			enum class Kind{
-				vertex, heightmap,
-
-				count
-			};
+			using Kind = ShapeKind;
 
 			virtual ~Shape() = default;
 
@@ -41,9 +41,9 @@ namespace gpwe{
 			virtual Mode mode() const noexcept = 0;
 
 			virtual std::uint32_t numPoints() const noexcept = 0;
-			virtual const glm::vec3 *vertices() const noexcept = 0;
-			virtual const glm::vec3 *normals() const noexcept = 0;
-			virtual const glm::vec2 *uvs(std::uint8_t channel = 0) const noexcept = 0;
+			virtual const Vec3 *vertices() const noexcept = 0;
+			virtual const Vec3 *normals() const noexcept = 0;
+			virtual const Vec2 *uvs(std::uint8_t channel = 0) const noexcept = 0;
 
 			virtual std::uint32_t numIndices() const noexcept = 0;
 			virtual const std::uint32_t *indices() const noexcept = 0;
@@ -53,20 +53,20 @@ namespace gpwe{
 		class Quad: public VertexShape{
 			public:
 				Quad(
-					const glm::vec3 &tl, const glm::vec3 &tr,
-					const glm::vec3 &bl, const glm::vec3 &br
+					const Vec3 &tl, const Vec3 &tr,
+					const Vec3 &bl, const Vec3 &br
 				);
 
 				Mode mode() const noexcept override{ return Mode::tris; }
 
 				std::uint32_t numPoints() const noexcept override{ return 4; }
 
-				const glm::vec3 *vertices() const noexcept override{ return m_verts; }
+				const Vec3 *vertices() const noexcept override{ return m_verts; }
 
-				const glm::vec3 *normals() const noexcept override{ return m_norms; }
+				const Vec3 *normals() const noexcept override{ return m_norms; }
 
-				const glm::vec2 *uvs(std::uint8_t channel = 0) const noexcept override{
-					static constexpr glm::vec2 arr[] = {
+				const Vec2 *uvs(std::uint8_t channel = 0) const noexcept override{
+					static constexpr Vec2 arr[] = {
 						{ 0.f, 0.f }, { 1.f, 0.f },
 						{ 1.f, 1.f }, { 0.f, 1.f }
 					};
@@ -83,7 +83,7 @@ namespace gpwe{
 				}
 
 			private:
-				glm::vec3 m_verts[4], m_norms[4];
+				Vec3 m_verts[4], m_norms[4];
 		};
 
 		class Rect: public Quad{
@@ -100,28 +100,28 @@ namespace gpwe{
 			public:
 				Hexahedron(
 					// front
-					const glm::vec3 &ftl, const glm::vec3 &ftr,
-					const glm::vec3 &fbl, const glm::vec3 &fbr,
+					const Vec3 &ftl, const Vec3 &ftr,
+					const Vec3 &fbl, const Vec3 &fbr,
 
 					// back
-					const glm::vec3 &btl, const glm::vec3 &btr,
-					const glm::vec3 &bbl, const glm::vec3 &bbr
+					const Vec3 &btl, const Vec3 &btr,
+					const Vec3 &bbl, const Vec3 &bbr
 				);
 
 				Mode mode() const noexcept override{ return Mode::tris; }
 
 				std::uint32_t numPoints() const noexcept override{ return std::size(m_verts); }
 
-				const glm::vec3 *vertices() const noexcept override{ return m_verts; }
-				const glm::vec3 *normals() const noexcept override{ return m_norms; }
-				const glm::vec2 *uvs(std::uint8_t channel = 0) const noexcept override;
+				const Vec3 *vertices() const noexcept override{ return m_verts; }
+				const Vec3 *normals() const noexcept override{ return m_norms; }
+				const Vec2 *uvs(std::uint8_t channel = 0) const noexcept override;
 
 				std::uint32_t numIndices() const noexcept override{ return 36; }
 
 				const std::uint32_t *indices() const noexcept override;
 
 			private:
-				glm::vec3 m_verts[24], m_norms[24];
+				Vec3 m_verts[24], m_norms[24];
 		};
 
 		class Cuboid: public Hexahedron{
@@ -144,9 +144,9 @@ namespace gpwe{
 		class TriangleMesh: public VertexShape{
 			public:
 				TriangleMesh(
-					Vector<glm::vec3> verts_,
-					Vector<glm::vec3> norms_,
-					Vector<glm::vec2> uvs_,
+					Vector<Vec3> verts_,
+					Vector<Vec3> norms_,
+					Vector<Vec2> uvs_,
 					Vector<std::uint32_t> indices_
 				)
 					: m_verts(std::move(verts_))
@@ -161,17 +161,17 @@ namespace gpwe{
 
 				std::uint32_t numPoints() const noexcept override{ return m_verts.size(); }
 
-				const glm::vec3 *vertices() const noexcept override{ return m_verts.data(); }
-				const glm::vec3 *normals() const noexcept override{ return m_norms.data(); }
-				const glm::vec2 *uvs(std::uint8_t channel = 0) const noexcept override{ return m_uvs.data(); }
+				const Vec3 *vertices() const noexcept override{ return m_verts.data(); }
+				const Vec3 *normals() const noexcept override{ return m_norms.data(); }
+				const Vec2 *uvs(std::uint8_t channel = 0) const noexcept override{ return m_uvs.data(); }
 
 				std::uint32_t numIndices() const noexcept override{ return m_indices.size(); }
 
 				const std::uint32_t *indices() const noexcept override{ return m_indices.data(); }
 
 			private:
-				Vector<glm::vec3> m_verts, m_norms;
-				Vector<glm::vec2> m_uvs;
+				Vector<Vec3> m_verts, m_norms;
+				Vector<Vec2> m_uvs;
 				Vector<std::uint32_t> m_indices;
 		};
 	}

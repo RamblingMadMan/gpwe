@@ -40,9 +40,48 @@ struct DrawElementsIndirectCommand{
 	GLuint baseInstance;
 };
 
-RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const VertexShape **shapes, std::uint32_t n)
-	: m_numShapes(numShapes)
+namespace {
+	inline GLenum dataTypeToGL(render::DataType type){
+		using Type = render::DataType;
+		switch(type){
+#define CASEMAP(a, b) case Type::a: return b
+			CASEMAP(nat8, GL_UNSIGNED_BYTE);
+			CASEMAP(nat16, GL_UNSIGNED_SHORT);
+			CASEMAP(nat32, GL_UNSIGNED_INT);
+			CASEMAP(int8, GL_BYTE);
+			CASEMAP(int16, GL_SHORT);
+			CASEMAP(int32, GL_INT);
+			CASEMAP(float32, GL_FLOAT);
+			CASEMAP(vec2, GL_FLOAT);
+			CASEMAP(vec3, GL_FLOAT);
+			CASEMAP(vec4, GL_FLOAT);
+			CASEMAP(mat2, GL_FLOAT);
+			CASEMAP(mat3, GL_FLOAT);
+			CASEMAP(mat4, GL_FLOAT);
+			default: return GL_INVALID_ENUM;
+#undef CASEMAP
+		}
+	}
+}
+
+RenderGroupGL43::RenderGroupGL43(
+	Vector<render::InstanceData> instDataInfo,
+	std::uint32_t numShapes, const VertexShape **shapes,
+	std::uint32_t n
+)
+	: render::Group(std::move(instDataInfo))
+	, m_numShapes(numShapes)
 {
+	std::size_t numAlloced =
+		std::pow(
+			2.0,
+			std::ceil(
+				std::log2(double(std::max<std::size_t>(n, 1)))
+			)
+		);
+
+	m_numAllocated = numAlloced;
+
 	glCreateBuffers(std::size(m_bufs), m_bufs);
 
 	Vector<DrawElementsIndirectCommand> cmds;
@@ -64,8 +103,8 @@ RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const VertexShape **sh
 		totalNumIndices += shape->numIndices();
 	}
 
-	Vector<glm::vec3> verts, norms;
-	Vector<glm::vec2> uvs;
+	Vector<Vec3> verts, norms;
+	Vector<Vec2> uvs;
 	Vector<std::uint32_t> indices;
 
 	verts.reserve(totalNumPoints);
@@ -82,10 +121,14 @@ RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const VertexShape **sh
 		indices.insert(indices.end(), shape->indices(), shape->indices() + shape->numIndices());
 	}
 
-	glNamedBufferStorage(m_bufs[0], sizeof(glm::vec3) * totalNumPoints, verts.data(), GL_MAP_READ_BIT);
-	glNamedBufferStorage(m_bufs[1], sizeof(glm::vec3) * totalNumPoints, norms.data(), GL_MAP_READ_BIT);
-	glNamedBufferStorage(m_bufs[2], sizeof(glm::vec2) * totalNumPoints, uvs.data(), GL_MAP_READ_BIT);
+	std::size_t totalAttribSize = instanceDataSize();
+
+	glNamedBufferStorage(m_bufs[0], sizeof(Vec3) * totalNumPoints, verts.data(), GL_MAP_READ_BIT);
+	glNamedBufferStorage(m_bufs[1], sizeof(Vec3) * totalNumPoints, norms.data(), GL_MAP_READ_BIT);
+	glNamedBufferStorage(m_bufs[2], sizeof(Vec2) * totalNumPoints, uvs.data(), GL_MAP_READ_BIT);
+
 	glNamedBufferStorage(m_bufs[3], sizeof(std::uint32_t) * totalNumIndices, indices.data(), GL_MAP_READ_BIT);
+
 	glNamedBufferStorage(m_bufs[4], sizeof(DrawElementsIndirectCommand) * numShapes, cmds.data(), GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
 	m_cmdPtr = glMapNamedBufferRange(
@@ -93,6 +136,16 @@ RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const VertexShape **sh
 		0, sizeof(DrawElementsIndirectCommand) * numShapes,
 		GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT
 	);
+
+	if(totalAttribSize > 0){
+		glNamedBufferStorage(m_bufs[5], totalAttribSize * numAlloced, nullptr, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+
+		m_dataPtr = glMapNamedBufferRange(
+			m_bufs[5],
+			0, totalAttribSize * numAlloced,
+			GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
+		);
+	}
 
 	glCreateVertexArrays(1, &m_vao);
 
@@ -105,13 +158,32 @@ RenderGroupGL43::RenderGroupGL43(std::uint32_t numShapes, const VertexShape **sh
 	glVertexArrayAttribBinding(m_vao, 2, 2);
 
 	constexpr GLintptr vertOffs[] = { 0, 0, 0 };
-	constexpr GLsizei vertStrides[] = { sizeof(glm::vec3), sizeof(glm::vec3), sizeof(glm::vec2) };
+	constexpr GLsizei vertStrides[] = { sizeof(Vec3), sizeof(Vec3), sizeof(Vec2) };
 
 	glVertexArrayVertexBuffers(m_vao, 0, 3, m_bufs, vertOffs, vertStrides);
 
 	glVertexArrayAttribFormat(m_vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribFormat(m_vao, 1, 3, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribFormat(m_vao, 2, 2, GL_FLOAT, GL_FALSE, 0);
+
+	if(totalAttribSize > 0){
+		glVertexArrayVertexBuffer(m_vao, 3, m_bufs[5], 0, totalAttribSize);
+		glVertexArrayBindingDivisor(m_vao, 3, 1);
+
+		std::uint32_t curAttrOff = 0;
+
+		for(GLuint i = 0; i < instanceDataInfo().size(); i++){
+			auto &&info = instanceDataInfo()[i];
+
+			GLuint attribIdx = 3 + i;
+
+			glEnableVertexArrayAttrib(m_vao, attribIdx);
+			glVertexArrayAttribBinding(m_vao, attribIdx, 3);
+			glVertexArrayAttribFormat(m_vao, attribIdx, render::dataTypeNumComponents(info.type()), dataTypeToGL(info.type()), GL_FALSE, curAttrOff);
+
+			curAttrOff += info.size();
+		}
+	}
 
 	glVertexArrayElementBuffer(m_vao, m_bufs[3]);
 }
@@ -127,21 +199,76 @@ void RenderGroupGL43::draw() const noexcept{
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, m_numShapes, sizeof(DrawElementsIndirectCommand));
 }
 
-void RenderGroupGL43::setNumInstances(std::uint32_t n){
+void *RenderGroupGL43::dataPtr(std::uint32_t idx){
+	if(idx >= numManaged<render::Instance>()) return nullptr;
+	return reinterpret_cast<char*>(m_dataPtr) + (instanceDataSize() * idx);
+}
+
+UniquePtr<render::Instance> RenderGroupGL43::doCreateInstance(){
+	std::size_t totalAttribSize = instanceDataSize();
+
+	if(totalAttribSize > 0 && numManaged<render::Instance>() == m_numAllocated){
+		auto newAlloced = m_numAllocated * 2;
+
+		GLuint newAttribBuf;
+		glCreateBuffers(1, &newAttribBuf);
+
+		glNamedBufferStorage(
+			newAttribBuf,
+			totalAttribSize * newAlloced,
+			nullptr,
+			GL_MAP_READ_BIT | GL_MAP_WRITE_BIT |
+			GL_MAP_PERSISTENT_BIT |
+			GL_MAP_COHERENT_BIT
+		);
+
+		glCopyNamedBufferSubData(
+			m_bufs[5], newAttribBuf,
+			0, 0,
+			m_numAllocated * totalAttribSize
+		);
+
+		auto oldBuf = m_bufs[5];
+
+		m_bufs[5] = newAttribBuf;
+
+		m_dataPtr = glMapNamedBufferRange(
+			m_bufs[5],
+			0, totalAttribSize * newAlloced,
+			GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
+		);
+
+		m_numAllocated = newAlloced;
+
+		glVertexArrayVertexBuffer(m_vao, 3, m_bufs[5], 0, totalAttribSize);
+		glVertexArrayBindingDivisor(m_vao, 3, 1);
+
+		std::uint32_t curAttrOff = 0;
+
+		for(GLuint i = 0; i < instanceDataInfo().size(); i++){
+			auto &&info = instanceDataInfo()[i];
+
+			GLuint attribIdx = 3 + i;
+
+			glEnableVertexArrayAttrib(m_vao, attribIdx);
+			glVertexArrayAttribBinding(m_vao, attribIdx, 3);
+			glVertexArrayAttribFormat(m_vao, attribIdx, render::dataTypeNumComponents(info.type()), dataTypeToGL(info.type()), GL_FALSE, curAttrOff);
+
+			curAttrOff += info.size();
+		}
+
+		glDeleteBuffers(1, &oldBuf);
+	}
+
 	auto cmds = reinterpret_cast<DrawElementsIndirectCommand*>(m_cmdPtr);
 	for(std::uint32_t i = 0; i < m_numShapes; i++){
 		auto cmd = cmds + i;
-		cmd->primCount = n;
+		++cmd->primCount;
 		glFlushMappedNamedBufferRange(m_bufs[4], (i * sizeof(DrawElementsIndirectCommand)) + offsetof(DrawElementsIndirectCommand, primCount), sizeof(GLuint));
 	}
-}
 
-std::uint32_t RenderGroupGL43::numInstances() const noexcept{
-	auto cmd = reinterpret_cast<const DrawElementsIndirectCommand*>(m_cmdPtr);
-	return cmd->primCount;
+	return makeUnique<RenderInstanceGL43>(this, (std::uint32_t)numManaged<render::Instance>());
 }
-
-void *RenderGroupGL43::dataPtr(std::uint32_t idx){ return nullptr; }
 
 void gpweGLMessageCB(
 	GLenum source,
@@ -249,7 +376,7 @@ void RendererGL43::present(const Camera *cam) noexcept{
 
 	glDrawBuffers(std::size(drawBufs), drawBufs);
 
-	glm::vec4 colorMix = glm::vec4(1.f);
+	Vec4 colorMix = Vec4(1.f);
 
 	auto viewProj = cam->projMat() * cam->viewMat();
 
@@ -280,8 +407,11 @@ void RendererGL43::present(const Camera *cam) noexcept{
 	glBlitFramebuffer(0, 0, w, h, 0, 0, oldW, oldH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-UniquePtr<render::Group> RendererGL43::doCreateGroup(std::uint32_t numShapes, const VertexShape **shapes){
-	return makeUnique<RenderGroupGL43>(numShapes, shapes);
+UniquePtr<render::Group> RendererGL43::doCreateGroup(
+	std::uint32_t numShapes, const VertexShape **shapes,
+	Vector<render::InstanceData> instanceDataInfo
+){
+	return makeUnique<RenderGroupGL43>(std::move(instanceDataInfo), numShapes, shapes);
 }
 
 UniquePtr<render::Program> RendererGL43::doCreateProgram(render::ProgramKind kind, std::string_view src){

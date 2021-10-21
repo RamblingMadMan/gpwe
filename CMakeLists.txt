@@ -56,6 +56,8 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/util/Str.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/Octree.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/noise.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/util/math.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/util/algo.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/log.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Version.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Manager.hpp

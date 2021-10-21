@@ -36,31 +36,35 @@ namespace gpwe{
 				return fut;
 			}
 
-			void doWork(){
+			std::size_t doWork(std::size_t n = SIZE_MAX){
 				std::lock_guard lock(m_mut);
 
-				if(m_tasks.empty()) return;
+				if(m_tasks.empty()) return 0;
 
-				for(auto &&fn : m_tasks){
-					fn();
+				n = std::min(n, m_tasks.size());
+
+				auto it = m_tasks.begin();
+
+				for(std::size_t i = 0; i < n && it != m_tasks.end(); i++){
+					auto &&f = *it;
+					f();
+					auto next = it;
+					++next;
+					m_tasks.erase(it);
+					it = next;
 				}
 
-				m_tasks.clear();
+				return n;
 			}
 
 			template<typename F>
-			void doWorkOr(F &&f){
-				std::lock_guard lock(m_mut);
-				if(m_tasks.empty()){
+			std::size_t doWorkOr(F &&f, std::size_t n = SIZE_MAX){
+				auto ret = doWork(n);
+				if(!ret){
 					f();
 				}
-				else{
-					for(auto &&fn : m_tasks){
-						fn();
-					}
 
-					m_tasks.clear();
-				}
+				return ret;
 			}
 
 		private:

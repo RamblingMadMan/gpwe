@@ -49,7 +49,7 @@ namespace gpwe::physics{
 			virtual ~Body() = default;
 
 			virtual float mass() const noexcept = 0;
-			virtual glm::vec3 position() const noexcept = 0;
+			virtual Vec3 position() const noexcept = 0;
 	};
 }
 
