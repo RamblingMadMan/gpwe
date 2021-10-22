@@ -103,7 +103,12 @@ namespace gpwe{
 				{}
 
 				Ret call(Args ... args) const override{
-					return fn(args...);
+					if constexpr(std::is_same_v<void, Ret>){
+						fn(args...);
+					}
+					else{
+						return fn(args...);
+					}
 				}
 
 				void clone(void *mem) const override{

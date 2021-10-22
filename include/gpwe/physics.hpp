@@ -22,7 +22,7 @@ namespace gpwe::physics{
 	};
 
 	class World :
-		public Managed<&Manager::doCreateWorld>,
+		public Managed<"physics::World"_cs, &Manager::doCreateWorld>,
 		public gpwe::Manager<World, ManagerKind::data, BodyShape, Body>
 	{
 		public:
@@ -39,12 +39,12 @@ namespace gpwe::physics{
 			friend class Body;
 	};
 
-	class BodyShape: public Managed<&World::doCreateBodyShape>{
+	class BodyShape: public Managed<"physics::BodyShape"_cs, &World::doCreateBodyShape>{
 		public:
 			virtual ~BodyShape() = default;
 	};
 
-	class Body: public Managed<&World::doCreateBody>{
+	class Body: public Managed<"physics::Body"_cs, &World::doCreateBody>{
 		public:
 			virtual ~Body() = default;
 

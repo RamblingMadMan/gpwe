@@ -44,10 +44,16 @@ physics::bullet3::Manager::Manager(){
 	if(!scheduler){
 		scheduler = btGetOpenMPTaskScheduler();
 		if(!scheduler){
+			#ifdef _WIN32
 			scheduler = btGetPPLTaskScheduler();
 			if(!scheduler){
+			#endif
+
 				scheduler = btGetSequentialTaskScheduler();
+
+			#ifdef _WIN32
 			}
+			#endif
 		}
 	}
 

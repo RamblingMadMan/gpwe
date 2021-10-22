@@ -44,15 +44,20 @@ set(GPWE_INCLUDE_DIRS ${GPWE_INCLUDE_DIR} ${PROJECT_BINARY_DIR}/include)
 set(
 	GPWE_INCLUDES
 	${PROJECT_BINARY_DIR}/include/gpwe/config.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/util/types.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/util/Event.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/util/Object.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/Allocator.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/Fn.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/Thread.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/meta.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/WorkQueue.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/util/Timer.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/Ticker.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/Vector.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/List.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/Map.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/util/Variant.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/Str.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/Octree.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/noise.hpp
@@ -70,7 +75,6 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/resource.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Camera.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Shape.hpp
-	${GPWE_INCLUDE_DIR}/gpwe/Texture.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/World.hpp
 )
 
@@ -114,6 +118,7 @@ add_fastnoise2()
 
 add_subdirectory(deps/glm EXCLUDE_FROM_ALL)
 add_subdirectory(deps/fmt EXCLUDE_FROM_ALL)
+add_subdirectory(deps/robin-hood-hashing EXCLUDE_FROM_ALL)
 
 set(OPTION_BUILD_TOOLS OFF CACHE BOOL "")
 set(OPTION_BUILD_EXAMPLES OFF CACHE BOOL "")

@@ -4,11 +4,11 @@
 #include <cstdint>
 #include <map>
 
-#include "util/Fn.hpp"
+#include "util/Event.hpp"
 #include "Manager.hpp"
 
 namespace gpwe::input{
-	class System{
+	class System: public Object<meta::CStr("input::System")>{
 		public:
 			using ExitEventFn = Fn<void()>;
 
@@ -58,31 +58,6 @@ namespace gpwe::input{
 		count
 	};
 
-	class Keyboard{
-		public:
-			using KeyEventFn = Fn<void(Key, bool)>;
-
-			using KeyEventIter = List<KeyEventFn>::iterator;
-
-			explicit Keyboard(std::uint32_t id_) noexcept
-				: m_id(id_){}
-
-			template<typename Fn>
-			KeyEventIter onKeyEvent(Fn &&fn){
-				return m_keyFns.emplace(m_keyFns.end(), std::forward<Fn>(fn));
-			}
-
-			void keyEvent(Key key, bool pressed){
-				for(auto &&fn : m_keyFns){
-					fn(key, pressed);
-				}
-			}
-
-		private:
-			std::uint32_t m_id;
-			List<KeyEventFn> m_keyFns;
-	};
-
 	enum class MouseButton: std::uint8_t{
 		left, right, middle,
 		scrollUp, scrollDown,
@@ -91,57 +66,11 @@ namespace gpwe::input{
 		count
 	};
 
-	class Mouse{
-		public:
-			using ButtonEventFn = Fn<void(MouseButton, bool)>;
-			using MoveEventFn = Fn<void(std::int32_t, std::int32_t)>;
+	class Keyboard;
+	class Mouse;
+	class Gamepad;
 
-			using ButtonEventIter = List<ButtonEventFn>::iterator;
-			using MoveEventIter = List<MoveEventFn>::iterator;
-
-			explicit Mouse(std::uint32_t id_) noexcept
-				: m_id(id_){}
-
-			template<typename Fn>
-			ButtonEventIter onButtonEvent(Fn &&fn){
-				return m_btnFns.emplace(m_btnFns.end(), std::forward<Fn>(fn));
-			}
-
-			template<typename Fn>
-			MoveEventIter onMoveEvent(Fn &&fn){
-				return m_moveFns.emplace(m_moveFns.end(), std::forward<Fn>(fn));
-			}
-
-			void buttonEvent(MouseButton btn, bool pressed){
-				for(auto &&fn : m_btnFns){
-					fn(btn, pressed);
-				}
-			}
-
-			void moveEvent(std::int32_t xrel, std::int32_t yrel){
-				for(auto &&fn : m_moveFns){
-					fn(xrel, yrel);
-				}
-			}
-
-		private:
-			std::uint32_t m_id;
-			List<ButtonEventFn> m_btnFns;
-			List<MoveEventFn> m_moveFns;
-	};
-
-	class Gamepad{
-		public:
-			explicit Gamepad(std::uint32_t id_) noexcept
-				: m_id(id_){}
-
-			std::uint32_t id() const noexcept{ return m_id; }
-
-		private:
-			std::uint32_t m_id;
-	};
-
-	class Manager: public gpwe::Manager<Manager, ManagerKind::input>{
+	class Manager: public gpwe::Manager<Manager, ManagerKind::input, Mouse, Keyboard>{
 		public:
 			using PumpEventFn = Fn<void()>;
 
@@ -164,30 +93,14 @@ namespace gpwe::input{
 				return m_pumpFns.emplace(m_pumpFns.end(), std::forward<Fn>(fn));
 			}
 
-			Keyboard *createKeyboard(){ return &m_kbs.emplace_back(m_kbs.size()); }
-			Mouse *createMouse(){ return &m_mice.emplace_back(m_mice.size()); }
-			Gamepad *createGamepad(){ return &m_gamepads.emplace_back(m_gamepads.size()); }
-
-			std::uint32_t numKeyboards() const noexcept{ return m_kbs.size(); }
-			std::uint32_t numMice() const noexcept{ return m_mice.size(); }
-			std::uint32_t numGamepads() const noexcept{ return m_gamepads.size(); }
-
 			System *system() noexcept{ return &m_sys; }
-
-			Keyboard *keyboard(std::uint32_t idx = 0) noexcept{
-				return getFromList(m_kbs, idx);
-			}
-
-			Mouse *mouse(std::uint32_t idx = 0) noexcept{
-				return getFromList(m_mice, idx);
-			}
-
-			Gamepad *gamepad(std::uint32_t idx = 0) noexcept{
-				return getFromList(m_gamepads, idx);
-			}
 
 		protected:
 			virtual void pumpEvents(){}
+
+			virtual UniquePtr<Keyboard> doCreateKeyboard(std::uint32_t id){ return makeUnique<Keyboard>(id); }
+			virtual UniquePtr<Mouse> doCreateMouse(std::uint32_t id){ return makeUnique<Mouse>(id); }
+			virtual UniquePtr<Gamepad> doCreateGamepad(std::uint32_t id){ return makeUnique<Gamepad>(id); }
 
 			template<typename T>
 			static T *getFromList(List<T> &l, std::uint32_t idx){
@@ -203,11 +116,75 @@ namespace gpwe::input{
 			}
 
 			System m_sys;
-			List<Keyboard> m_kbs;
-			List<Mouse> m_mice;
-			List<Gamepad> m_gamepads;
 
 			List<PumpEventFn> m_pumpFns;
+
+			friend class Keyboard;
+			friend class Mouse;
+			friend class Gamepad;
+	};
+
+	class Keyboard: public Managed<meta::CStr("input::Keyboard"), &Manager::doCreateKeyboard>{
+		public:
+			using KeyEvent = Event<Key, bool>;
+			using KeyEventFn = Fn<void(Key, bool)>;
+
+			using KeyEventIter = List<KeyEventFn>::iterator;
+
+			explicit Keyboard(std::uint32_t id_) noexcept
+				: m_id(id_){}
+
+			KeyEvent &keyEvent() noexcept{ return m_keyEvent; }
+
+		private:
+			std::uint32_t m_id;
+			KeyEvent m_keyEvent;
+			List<KeyEventFn> m_keyFns;
+	};
+
+	class Mouse: public Managed<meta::CStr("input::Mouse"), &Manager::doCreateMouse>{
+		public:
+			using ButtonEvent = Event<MouseButton, bool>;
+			using MoveEvent = Event<Int32, Int32>;
+
+			explicit Mouse(std::uint32_t id_) noexcept
+				: m_id(id_){}
+
+			virtual void captureMouse(bool enabled = true){}
+
+			ButtonEvent &buttonEvent() noexcept{ return m_btnEvent; }
+			MoveEvent &moveEvent() noexcept{ return m_moveEvent; }
+
+		private:
+			std::uint32_t m_id;
+			ButtonEvent m_btnEvent;
+			MoveEvent m_moveEvent;
+	};
+
+	enum class GamepadButton{
+		A, B, X, Y,
+
+		cross = A, circle = B, square = X, triangle = Y,
+
+		dpadLeft, dpadRight, dpadUp, dpadDown,
+
+		count
+	};
+
+	class Gamepad: public Managed<meta::CStr("InputGamepad"), &Manager::doCreateGamepad>{
+		public:
+			using ButtonEvent = Event<GamepadButton, bool>;
+
+			explicit Gamepad(std::uint32_t id_) noexcept
+				: m_id(id_){}
+
+			std::uint32_t id() const noexcept{ return m_id; }
+
+			ButtonEvent &buttonEvent() noexcept{ return m_buttonEvent; }
+
+		private:
+			std::uint32_t m_id;
+			ButtonEvent m_buttonEvent;
 	};
 }
 

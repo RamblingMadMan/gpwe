@@ -8,8 +8,7 @@ namespace gpwe{
 		public:
 			explicit RenderGroupGL43(
 				Vector<render::InstanceData> instDataInfo,
-				std::uint32_t numShapes, const VertexShape **shapes,
-				std::uint32_t n = 1
+				std::uint32_t numShapes, const VertexShape **shapes
 			);
 
 			~RenderGroupGL43();

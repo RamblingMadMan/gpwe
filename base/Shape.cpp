@@ -9,8 +9,8 @@
 using namespace gpwe;
 
 shapes::Quad::Quad(
-	const glm::vec3 &tl, const glm::vec3 &tr,
-	const glm::vec3 &bl, const glm::vec3 &br
+	const Vec3 &tl, const Vec3 &tr,
+	const Vec3 &bl, const Vec3 &br
 )
 	: m_verts{ bl, br, tr, tl }
 {
@@ -35,12 +35,12 @@ shapes::Rect::Rect(float w, float h)
 
 shapes::Hexahedron::Hexahedron(
 	// front
-	const glm::vec3 &ftl, const glm::vec3 &ftr,
-	const glm::vec3 &fbl, const glm::vec3 &fbr,
+	const Vec3 &ftl, const Vec3 &ftr,
+	const Vec3 &fbl, const Vec3 &fbr,
 
 	// back
-	const glm::vec3 &btl, const glm::vec3 &btr,
-	const glm::vec3 &bbl, const glm::vec3 &bbr
+	const Vec3 &btl, const Vec3 &btr,
+	const Vec3 &bbl, const Vec3 &bbr
 )
 	: m_verts{
 			fbl, fbr, ftr, ftl, // front
@@ -96,8 +96,8 @@ const glm::vec2 *shapes::Hexahedron::uvs(std::uint8_t channel) const noexcept{
 	return arr[std::min((std::size_t)channel, std::size(arr)-1)];
 }
 
-const std::uint32_t *shapes::Hexahedron::indices() const noexcept{
-	static constexpr std::uint32_t arr[36] = {
+const Nat32 *shapes::Hexahedron::indices() const noexcept{
+	static constexpr Nat32 arr[36] = {
 		// front
 		0, 1, 2,
 		0, 2, 3,
@@ -139,7 +139,7 @@ shapes::Cuboid::Cuboid(HalfT, float hw, float hh, float hd)
 		)
 {}
 
-HeightMapShape HeightMapShape::createSimpleTerrain(std::uint16_t resolution, float scale){
+HeightMapShape HeightMapShape::createSimpleTerrain(Nat16 resolution, float scale){
 	// straight ripped from the FastNoise2 library tests
 	// https://github.com/Auburn/FastNoise2/blob/master/tests/FastNoiseCpp11Include.cpp
 	auto noiseNode = FastNoise::New<FastNoise::FractalFBm>();
@@ -174,11 +174,12 @@ shapes::TriangleMesh HeightMapShape::generateMesh(float scale) const{
 					   ? m_h * scale
 					   : m_h * scale * aspect;
 
-	std::uint32_t numPoints = m_w * m_h;
-	std::uint32_t numIndices = ((m_w-1) * (m_h-1)) * 2 * 3;
-	Vector<glm::vec3> verts, norms;
+	Nat32 numPoints = m_w * m_h;
+	Nat32 numIndices = ((m_w-1) * (m_h-1)) * 2 * 3;
+	Vector<Vec3> verts;
+	Vector<Vec4> norms;
 	Vector<glm::vec2> uvs;
-	Vector<std::uint32_t> indices;
+	Vector<Nat32> indices;
 
 	verts.reserve(numPoints);
 	norms.reserve(numPoints);
@@ -188,64 +189,85 @@ shapes::TriangleMesh HeightMapShape::generateMesh(float scale) const{
 	const float yStep = 1.f / m_h;
 	const float xStep = 1.f / m_w;
 
-	for(std::uint16_t y = 0; y < m_h; y++){
-		const std::uint16_t yIdx = y * m_w;
+	for(Nat16 y = 0; y < m_h; y++){
+		const Nat16 yIdx = y * m_w;
 		const float yRel = y * yStep;
 		const float yOff = yRel - 0.5f;
-		for(std::uint16_t x = 0; x < m_w; x++){
-			const std::uint16_t idx = yIdx + x;
+		for(Nat16 x = 0; x < m_w; x++){
+			const Nat16 idx = yIdx + x;
 			const float xRel = x * xStep;
 			const float xOff = xRel - 0.5f;
 			verts.emplace_back(xOff * dimX, m_values[idx], yOff * dimY);
-			norms.emplace_back(glm::vec3(0.f, 0.f, 0.f)); // Zeroed for face average
+			norms.emplace_back(Vec4(0.f)); // Zeroed for face average
 			uvs.emplace_back(glm::vec2(xRel, 1.f - yRel));
 		}
 	}
 
-	struct Tri{
-		std::uint32_t indices[3];
-		glm::vec3 normal;
-	};
+	Nat32 y0Idx = 0;
 
-	Vector<Tri> tris;
-	tris.reserve(m_w * m_h * 3);
+	for(Nat16 y = 1; y < m_h; y++){
+		const Nat32 y1Idx = y * m_w;
 
-	std::uint32_t y0Idx = 0;
+		for(Nat16 x = 0; x < (m_w - 1); x++){
+			Nat32 i0 = y0Idx + x;
+			Nat32 i1 = y0Idx + x + 1;
+			Nat32 i2 = y1Idx + x + 1;
+			Nat32 i3 = y1Idx + x;
 
-	for(std::uint16_t y = 1; y < m_h; y++){
-		const std::uint32_t y1Idx = y * m_w;
+			const auto normA = glm::triangleNormal(verts[i2], verts[i1], verts[i0]);
+			const auto normB = glm::triangleNormal(verts[i3], verts[i2], verts[i0]);
 
-		for(std::uint16_t x = 0; x < (m_w - 1); x++){
-			std::uint32_t i0 = y0Idx + x;
-			std::uint32_t i1 = y0Idx + x + 1;
-			std::uint32_t i2 = y1Idx + x + 1;
-			std::uint32_t i3 = y1Idx + x;
+			norms[i0] += Vec4(normA + normB, 2.f);
+			norms[i1] += Vec4(normA, 1.f);
+			norms[i2] += Vec4(normA + normB, 2.f);
+			norms[i3] += Vec4(normB, 1.f);
 
-			const auto &p0 = verts[i0];
-			const auto &p1 = verts[i1];
-			const auto &p2 = verts[i2];
-			const auto &p3 = verts[i3];
+			indices.emplace_back(i0);
+			indices.emplace_back(i1);
+			indices.emplace_back(i2);
 
-			Tri f0{ .indices = { i0, i1, i2 }, .normal = glm::triangleNormal(p2, p1, p0) };
-			Tri f1{ .indices = { i0, i2, i3 }, .normal = glm::triangleNormal(p3, p2, p0) };
-
-			tris.push_back(f0);
-			tris.push_back(f1);
+			indices.emplace_back(i0);
+			indices.emplace_back(i2);
+			indices.emplace_back(i3);
 		}
 
 		y0Idx = y1Idx;
 	}
 
-	for(auto &&tri : tris){
-		for(auto idx : tri.indices){
-			indices.emplace_back(idx);
-			norms[idx] += tri.normal;
+	for(auto &norm : norms){
+		norm /= std::max(norm.w, 1.f);
+		norm = Vec4(glm::normalize(Vec3(norm)), 1.f);
+	}
+
+	auto avgNormals = Vector<Vec3>(norms.begin(), norms.end());
+
+	/*
+	// Calculate inner normals
+	for(Nat16 y = 1; y < (m_h - 1); y++){
+		for(Nat16 x = 1; x < (m_w - 1); x++){
+			Nat16 idx = (y * m_w) + x;
+
+			const Vec3 &p = verts[idx];
+			const Vec3 &above = verts[idx - m_w];
+			const Vec3 &below = verts[idx + m_w];
+			const Vec3 &left = verts[idx - 1];
+			const Vec3 &right = verts[idx + 1];
+
+			Vec4 &norm = norms[idx];
+			norm += Vec4(glm::triangleNormal(above, right, p), 1.f);
+			norm += Vec4(glm::triangleNormal(right, below, p), 1.f);
+			norm += Vec4(glm::triangleNormal(below, left, p), 1.f);
+			norm += Vec4(glm::triangleNormal(left, above, p), 1.f);
 		}
 	}
 
-	for(auto &&norm : norms){
-		norm = glm::normalize(norm);
-	}
+	// Average normals
+	for(Nat16 y = 1; y < (m_h - 1); y++){
+		for(Nat16 x = 1; x < (m_w - 1); x++){
 
-	return shapes::TriangleMesh(std::move(verts), std::move(norms), std::move(uvs), std::move(indices));
+		}
+	}
+	*/
+
+	return shapes::TriangleMesh(std::move(verts), std::move(avgNormals), std::move(uvs), std::move(indices));
 }

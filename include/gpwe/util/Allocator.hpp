@@ -85,13 +85,20 @@ namespace gpwe{
 			explicit UniquePtr(U *ptr) noexcept
 				: m_ptr(ptr){}
 
+			UniquePtr(const UniquePtr&) = delete;
+
 			template<typename U>
 			UniquePtr(UniquePtr<U> &&other) noexcept
+				: m_ptr(other.release()){}
+
+			UniquePtr(UniquePtr &&other) noexcept
 				: m_ptr(other.release()){}
 
 			~UniquePtr(){
 				destroy();
 			}
+
+			UniquePtr &operator=(const UniquePtr&) = delete;
 
 			template<typename U>
 			UniquePtr &operator=(UniquePtr<U> &&other) noexcept{

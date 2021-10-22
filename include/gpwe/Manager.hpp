@@ -1,8 +1,10 @@
 #ifndef GPWE_MANAGER_HPP
 #define GPWE_MANAGER_HPP 1
 
+#include "util/Object.hpp"
 #include "util/algo.hpp"
 #include "util/List.hpp"
+#include "util/Str.hpp"
 #include "Version.hpp"
 
 namespace gpwe{
@@ -17,8 +19,14 @@ namespace gpwe{
 		};
 	}
 
-	template<auto CreateFn>
-	class Managed{
+	// f$%*n diamond inheritance
+	class ManagedBase: public virtual ObjectBase{
+		public:
+			virtual ~ManagedBase() = default;
+	};
+
+	template<auto ObjName, auto CreateFn, typename ... Props>
+	class Managed: public Object<ObjName, Props...>, public ManagedBase{
 		public:
 			static constexpr auto createFn() noexcept{ return CreateFn; }
 
@@ -77,7 +85,6 @@ namespace gpwe{
 				return this->ManagerStorage<T>::ptrs().size();
 			}
 
-		protected:
 			template<typename T>
 			List<UniquePtr<T>> &managed() noexcept{
 				using namespace detail;

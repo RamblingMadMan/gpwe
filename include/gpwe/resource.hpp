@@ -10,7 +10,7 @@
 
 #include "Manager.hpp"
 #include "Shape.hpp"
-#include "Texture.hpp"
+#include "render.hpp"
 
 namespace gpwe{
 	namespace fs = std::filesystem;
@@ -166,14 +166,14 @@ namespace gpwe::resource{
 
 	class Image: public Asset{
 		public:
-			Texture::Kind textureKind() const noexcept{ return m_texKind; }
+			render::TextureKind textureKind() const noexcept{ return m_texKind; }
 			std::uint16_t width() const noexcept{ return m_w; }
 			std::uint16_t height() const noexcept{ return m_h; }
 
 		protected:
 			Image(
 				Kind kind_, Access access_, Str path_,
-				Texture::Kind texKind_,
+				render::TextureKind texKind_,
 				std::uint16_t w_, std::uint16_t h_
 			)
 				: Asset(kind_, access_, Category::image, std::move(path_))
@@ -181,14 +181,14 @@ namespace gpwe::resource{
 				, m_w(w_), m_h(h_)
 			{}
 
-			void setTextureData(Texture::Kind texKind_, std::uint16_t w_, std::uint16_t h_){
+			void setTextureData(render::TextureKind texKind_, std::uint16_t w_, std::uint16_t h_){
 				m_texKind = texKind_;
 				m_w = w_;
 				m_h = h_;
 			}
 
 		private:
-			Texture::Kind m_texKind;
+			render::TextureKind m_texKind;
 			std::uint16_t m_w, m_h;
 	};
 
@@ -209,9 +209,7 @@ namespace gpwe::resource{
 			virtual const Face *face(std::size_t idx) const noexcept = 0;
 
 		protected:
-			Font(
-				Kind kind_, Access access_, Str path_
-			)
+			Font(Kind kind_, Access access_, Str path_) noexcept
 				: Asset(kind_, access_, Category::font, std::move(path_)){}
 	};
 

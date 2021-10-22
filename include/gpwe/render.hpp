@@ -97,7 +97,7 @@ namespace gpwe::render{
 		}
 	}
 
-	class InstanceData{
+	class InstanceData: public Object<"render::InstanceData"_cs>{
 		public:
 			DataType type() const noexcept{ return m_type; }
 			std::size_t size() const noexcept{ return m_len * dataTypeSize(m_type); }
@@ -177,7 +177,7 @@ namespace gpwe::render{
 	class Instance;
 
 	class Group:
-			public gpwe::Managed<&Manager::doCreateGroup>,
+			public gpwe::Managed<"render::Group"_cs, &Manager::doCreateGroup>,
 			public gpwe::Manager<Group, ManagerKind::data, Instance>
 	{
 		public:
@@ -213,7 +213,7 @@ namespace gpwe::render{
 			friend class Instance;
 	};
 
-	class Instance: public gpwe::Managed<&Group::doCreateInstance>{
+	class Instance: public gpwe::Managed<"render::Instance"_cs, &Group::doCreateInstance>{
 		public:
 			Group *group() noexcept{ return m_group; }
 			const Group *group() const noexcept{ return m_group; }
@@ -228,14 +228,14 @@ namespace gpwe::render{
 			std::uint32_t m_idx;
 	};
 
-	class Texture: public gpwe::Managed<&Manager::doCreateTexture>{
+	class Texture: public gpwe::Managed<"render::Texture"_cs, &Manager::doCreateTexture>{
 		public:
 			using Kind = TextureKind;
 
 			virtual ~Texture() = default;
 	};
 
-	class Framebuffer: public gpwe::Managed<&Manager::doCreateFramebuffer>{
+	class Framebuffer: public gpwe::Managed<"render::Framebuffer"_cs, &Manager::doCreateFramebuffer>{
 		public:
 			enum class Mode{
 				write, read, readWrite,
@@ -253,7 +253,7 @@ namespace gpwe::render{
 			virtual Texture::Kind attachmentKind(std::uint32_t idx) const noexcept = 0;
 	};
 
-	class Program: public gpwe::Managed<&Manager::doCreateProgram>{
+	class Program: public gpwe::Managed<"render::Program"_cs, &Manager::doCreateProgram>{
 		public:
 			using Kind = ProgramKind;
 
@@ -262,7 +262,12 @@ namespace gpwe::render{
 			virtual Kind kind() const noexcept = 0;
 	};
 
-	class Pipeline: public gpwe::Managed<&Manager::doCreatePipeline>{
+	class Pipeline:
+		public gpwe::Managed<
+			"render::Pipeline"_cs,
+			&Manager::doCreatePipeline
+		>
+	{
 		public:
 			virtual ~Pipeline() = default;
 

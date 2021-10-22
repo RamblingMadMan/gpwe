@@ -66,19 +66,13 @@ namespace {
 
 RenderGroupGL43::RenderGroupGL43(
 	Vector<render::InstanceData> instDataInfo,
-	std::uint32_t numShapes, const VertexShape **shapes,
-	std::uint32_t n
+	std::uint32_t numShapes, const VertexShape **shapes
 )
 	: render::Group(std::move(instDataInfo))
 	, m_numShapes(numShapes)
 {
 	std::size_t numAlloced =
-		std::pow(
-			2.0,
-			std::ceil(
-				std::log2(double(std::max<std::size_t>(n, 1)))
-			)
-		);
+	std::pow(2.0, std::ceil(std::log2(double(4))));
 
 	m_numAllocated = numAlloced;
 
@@ -94,7 +88,7 @@ RenderGroupGL43::RenderGroupGL43(
 		auto &cmd = cmds[i];
 
 		cmd.count = shape->numIndices();
-		cmd.primCount = n;
+		cmd.primCount = 0; // start with no instances/
 		cmd.firstIndex = totalNumIndices;
 		cmd.baseVertex = totalNumPoints;
 		cmd.baseInstance = 0;

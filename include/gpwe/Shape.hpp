@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <array>
 
+#include "util/Object.hpp"
 #include "util/Vector.hpp"
 #include "util/math.hpp"
 #include "log.hpp"
@@ -40,13 +41,13 @@ namespace gpwe{
 
 			virtual Mode mode() const noexcept = 0;
 
-			virtual std::uint32_t numPoints() const noexcept = 0;
+			virtual Nat32 numPoints() const noexcept = 0;
 			virtual const Vec3 *vertices() const noexcept = 0;
 			virtual const Vec3 *normals() const noexcept = 0;
-			virtual const Vec2 *uvs(std::uint8_t channel = 0) const noexcept = 0;
+			virtual const Vec2 *uvs(Nat8 channel = 0) const noexcept = 0;
 
-			virtual std::uint32_t numIndices() const noexcept = 0;
-			virtual const std::uint32_t *indices() const noexcept = 0;
+			virtual Nat32 numIndices() const noexcept = 0;
+			virtual const Nat32 *indices() const noexcept = 0;
 	};
 
 	namespace shapes{
@@ -59,13 +60,13 @@ namespace gpwe{
 
 				Mode mode() const noexcept override{ return Mode::tris; }
 
-				std::uint32_t numPoints() const noexcept override{ return 4; }
+				Nat32 numPoints() const noexcept override{ return 4; }
 
 				const Vec3 *vertices() const noexcept override{ return m_verts; }
 
 				const Vec3 *normals() const noexcept override{ return m_norms; }
 
-				const Vec2 *uvs(std::uint8_t channel = 0) const noexcept override{
+				const Vec2 *uvs(Nat8 channel = 0) const noexcept override{
 					static constexpr Vec2 arr[] = {
 						{ 0.f, 0.f }, { 1.f, 0.f },
 						{ 1.f, 1.f }, { 0.f, 1.f }
@@ -74,10 +75,10 @@ namespace gpwe{
 					return arr;
 				}
 
-				std::uint32_t numIndices() const noexcept override{ return 6; }
+				Nat32 numIndices() const noexcept override{ return 6; }
 
-				const std::uint32_t *indices() const noexcept override{
-					static constexpr std::uint32_t arr[] = { 0, 1, 2, 0, 2, 3 };
+				const Nat32 *indices() const noexcept override{
+					static constexpr Nat32 arr[] = { 0, 1, 2, 0, 2, 3 };
 
 					return arr;
 				}
@@ -110,15 +111,15 @@ namespace gpwe{
 
 				Mode mode() const noexcept override{ return Mode::tris; }
 
-				std::uint32_t numPoints() const noexcept override{ return std::size(m_verts); }
+				Nat32 numPoints() const noexcept override{ return std::size(m_verts); }
 
 				const Vec3 *vertices() const noexcept override{ return m_verts; }
 				const Vec3 *normals() const noexcept override{ return m_norms; }
-				const Vec2 *uvs(std::uint8_t channel = 0) const noexcept override;
+				const Vec2 *uvs(Nat8 channel = 0) const noexcept override;
 
-				std::uint32_t numIndices() const noexcept override{ return 36; }
+				Nat32 numIndices() const noexcept override{ return 36; }
 
-				const std::uint32_t *indices() const noexcept override;
+				const Nat32 *indices() const noexcept override;
 
 			private:
 				Vec3 m_verts[24], m_norms[24];
@@ -147,7 +148,7 @@ namespace gpwe{
 					Vector<Vec3> verts_,
 					Vector<Vec3> norms_,
 					Vector<Vec2> uvs_,
-					Vector<std::uint32_t> indices_
+					Vector<Nat32> indices_
 				)
 					: m_verts(std::move(verts_))
 					, m_norms(std::move(norms_))
@@ -159,26 +160,26 @@ namespace gpwe{
 
 				Mode mode() const noexcept override{ return Mode::tris; }
 
-				std::uint32_t numPoints() const noexcept override{ return m_verts.size(); }
+				Nat32 numPoints() const noexcept override{ return m_verts.size(); }
 
 				const Vec3 *vertices() const noexcept override{ return m_verts.data(); }
 				const Vec3 *normals() const noexcept override{ return m_norms.data(); }
-				const Vec2 *uvs(std::uint8_t channel = 0) const noexcept override{ return m_uvs.data(); }
+				const Vec2 *uvs(Nat8 channel = 0) const noexcept override{ return m_uvs.data(); }
 
-				std::uint32_t numIndices() const noexcept override{ return m_indices.size(); }
+				Nat32 numIndices() const noexcept override{ return m_indices.size(); }
 
-				const std::uint32_t *indices() const noexcept override{ return m_indices.data(); }
+				const Nat32 *indices() const noexcept override{ return m_indices.data(); }
 
 			private:
 				Vector<Vec3> m_verts, m_norms;
 				Vector<Vec2> m_uvs;
-				Vector<std::uint32_t> m_indices;
+				Vector<Nat32> m_indices;
 		};
 	}
 
 	class HeightMapShape: public Shape{
 		public:
-			HeightMapShape(std::uint16_t w, std::uint16_t h, Vector<float> values_) noexcept
+			HeightMapShape(Nat16 w, Nat16 h, Vector<float> values_) noexcept
 				: m_w(w), m_h(h), m_values(std::move(values_))
 			{
 				if(m_values.size() == 0){
@@ -195,18 +196,18 @@ namespace gpwe{
 				}
 			}
 
-			static HeightMapShape createSimpleTerrain(std::uint16_t resolution = 256, float scale = 100.f);
+			static HeightMapShape createSimpleTerrain(Nat16 resolution = 256, float scale = 100.f);
 
 			Kind kind() const noexcept override{ return Kind::heightmap; }
 
-			std::uint16_t width() const noexcept{ return m_w; }
-			std::uint16_t height() const noexcept{ return m_h; }
+			Nat16 width() const noexcept{ return m_w; }
+			Nat16 height() const noexcept{ return m_h; }
 			const float *values() const noexcept{ return m_values.data(); }
 
 			shapes::TriangleMesh generateMesh(float xyScale = 100.f) const;
 
 		private:
-			std::uint16_t m_w, m_h;
+			Nat16 m_w, m_h;
 			Vector<float> m_values;
 	};
 }

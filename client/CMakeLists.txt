@@ -9,7 +9,7 @@ add_executable(gpwe-client ${GPWE_INCLUDES} ${GPWE_CLIENT_SOURCES})
 
 set_target_properties(
 	gpwe-client PROPERTIES
-	CXX_STANDARD 17
+	CXX_STANDARD 20
 	CXX_STANDARD_REQUIRED ON
 )
 

@@ -21,7 +21,7 @@ using GPWEProc = void(*)();
 
 #include "FastNoise/FastNoise.h"
 
-#include "gpwe/util/Ticker.hpp"
+#include "gpwe/util/Timer.hpp"
 #include "gpwe/util/WorkQueue.hpp"
 
 #include "gpwe/config.hpp"
@@ -193,6 +193,7 @@ sys::Manager::~Manager(){
 	m_renderManager.reset();
 	m_physicsManager.reset();
 	m_inputManager.reset();
+	gpweSysManager = nullptr;
 }
 
 void sys::Manager::loadPlugins(){
@@ -250,20 +251,13 @@ int sys::Manager::exec(PresentFn presentFn){
 
 	if(!m_running){
 		init();
-	}
+	}	
 
 	while(m_running){
 		auto dt = ticker.tick();
 		update(dt);
 		presentFn();
 	}
-
-	m_appManager.reset();
-	m_renderManager.reset();
-	m_physicsManager.reset();
-	m_inputManager.reset();
-
-	gpweSysManager = this;
 
 	return 0;
 }

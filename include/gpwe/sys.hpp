@@ -16,7 +16,16 @@ namespace gpwe::log{
 	class Manager;
 }
 
-namespace gpwe::app{
+namespace gpwe::sys{
+	class Manager;
+}
+
+namespace gpwe::resource{
+	class Manager;
+	class Plugin;
+}
+
+namespace gpwe::input{
 	class Manager;
 }
 
@@ -28,16 +37,7 @@ namespace gpwe::physics{
 	class Manager;
 }
 
-namespace gpwe::input{
-	class Manager;
-}
-
-namespace gpwe::resource{
-	class Manager;
-	class Plugin;
-}
-
-namespace gpwe::sys{
+namespace gpwe::app{
 	class Manager;
 }
 
@@ -53,8 +53,6 @@ namespace gpwe{
 }
 
 namespace gpwe::sys{
-	class Manager;
-
 	using PresentFn = Fn<void()>;
 
 	class Manager: public gpwe::Manager<Manager, ManagerKind::sys>{
@@ -171,11 +169,10 @@ namespace gpwe::sys{
 
 	Camera *camera() noexcept;
 
-	ResourceManager *resourceManager() noexcept;
-
 	SysManager *manager() noexcept;
-	inline SysManager *sysManager() noexcept{ return manager(); }
 
+	inline SysManager *sysManager() noexcept{ return manager(); }
+	ResourceManager *resourceManager() noexcept;
 	LogManager *logManager() noexcept;
 	InputManager *inputManager() noexcept;
 	RenderManager *renderManager() noexcept;

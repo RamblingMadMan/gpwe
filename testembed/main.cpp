@@ -6,19 +6,14 @@
 
 #include "MainWindow.hpp"
 
-class TestApp: public gpwe::app::Manager{
-	public:
-		TestApp(){}
-		~TestApp(){}
-
-		void update(float dt) override{}
-};
-
 class InputManager: public gpwe::input::Manager{
 	public:
+		using Mouse = gpwe::input::Mouse;
+		using Keyboard = gpwe::input::Keyboard;
+
 		InputManager(){
-			createMouse();
-			createKeyboard();
+			create<Mouse>(0);
+			create<Keyboard>(0);
 		}
 };
 
@@ -26,7 +21,6 @@ int main(int argc, char *argv[]){
 	auto manager = gpwe::makeUnique<gpwe::sys::Manager>();
 
 	manager->setArgs(argc, argv);
-	manager->setAppManager(gpwe::makeUnique<TestApp>());
 	manager->setInputManager(gpwe::makeUnique<InputManager>());
 
 	gpwe::sys::setManager(manager.get());

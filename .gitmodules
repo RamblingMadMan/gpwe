@@ -23,3 +23,6 @@
 [submodule "deps/FastNoise2"]
 	path = deps/FastNoise2
 	url = https://github.com/Auburn/FastNoise2.git
+[submodule "deps/robin-hood-hashing"]
+	path = deps/robin-hood-hashing
+	url = https://github.com/martinus/robin-hood-hashing.git

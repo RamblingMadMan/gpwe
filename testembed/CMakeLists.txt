@@ -15,7 +15,7 @@ add_executable(gpwe-test-embed ${GPWE_TESTEMBED_SOURCES})
 
 set_target_properties(
 	gpwe-test-embed PROPERTIES
-	CXX_STANDARD 17
+	CXX_STANDARD 20
 	STANDARD_REQUIRED ON
 	AUTOMOC ON
 )
@@ -27,4 +27,4 @@ target_link_libraries(
 	Qt::Core Qt::Widgets
 )
 
-gpwe_embed_plugins(gpwe-test-embed renderer-gl43 physics-bullet3)
+gpwe_embed_plugins(gpwe-test-embed renderer-gl43 physics-bullet3 app-test)

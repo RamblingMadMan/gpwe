@@ -94,11 +94,18 @@ namespace {
 	}
 }
 
+class SDLMouse: public input::Mouse{
+	public:
+		void captureMouse(bool enabled) override{
+			SDL_CaptureMouse(enabled ? SDL_TRUE : SDL_FALSE);
+		}
+};
+
 class SDLInputManager: public input::Manager{
 	public:
 		SDLInputManager(){
-			createMouse();
-			createKeyboard();
+			create<input::Mouse>(0);
+			create<input::Keyboard>(0);
 		}
 
 	protected:
@@ -117,8 +124,8 @@ class SDLInputManager: public input::Manager{
 						auto key = sdlkToKey(ev.key.keysym.sym);
 						if(key == input::Key::count) break;
 
-						for(auto &&kb : m_kbs){
-							kb.keyEvent(key, ev.type == SDL_KEYDOWN);
+						for(auto &&kb : managed<input::Keyboard>()){
+							kb->keyEvent().emit_(key, ev.type == SDL_KEYDOWN);
 						}
 
 						break;
@@ -129,16 +136,16 @@ class SDLInputManager: public input::Manager{
 						auto btn = sdlToMouseBtn(ev.button.button);
 						if(btn == input::MouseButton::count) break;
 
-						for(auto &&mouse : m_mice){
-							mouse.buttonEvent(btn, ev.type == SDL_MOUSEBUTTONDOWN);
+						for(auto &&mouse : managed<input::Mouse>()){
+							mouse->buttonEvent().emit_(btn, ev.type == SDL_MOUSEBUTTONDOWN);
 						}
 
 						break;
 					}
 
 					case SDL_MOUSEMOTION:{
-						for(auto &&mouse : m_mice){
-							mouse.moveEvent(ev.motion.xrel, ev.motion.yrel);
+						for(auto &&mouse : managed<input::Mouse>()){
+							mouse->moveEvent().emit_(ev.motion.xrel, ev.motion.yrel);
 						}
 
 						break;
@@ -169,6 +176,8 @@ int main(int argc, char *argv[]){
 #ifndef NDEBUG
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
+	SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, SDL_TRUE);
+
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -176,6 +185,7 @@ int main(int argc, char *argv[]){
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
 
+	// TODO: set this for windowed only
 	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
 
 	gpweWin = SDL_CreateWindow("GPWE", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_OPENGL);

@@ -23,7 +23,7 @@ add_library(gpwe-base SHARED ${GPWE_INCLUDES} ${GPWE_BASE_SOURCES})
 
 set_target_properties(
 	gpwe-base PROPERTIES
-	CXX_STANDARD 17
+	CXX_STANDARD 20
 	CXX_STANDARD_REQUIRED ON
 )
 
@@ -51,6 +51,7 @@ target_link_libraries(
 
 target_link_libraries(
 	gpwe-base PUBLIC
+	robin_hood::robin_hood
 	glm::glm
 	fmt-header-only
 	plf-list
@@ -71,7 +72,7 @@ macro(add_gpwe_plugin name)
 		gpwe-${name} PROPERTIES
 		POSITION_INDEPENDENT_CODE ON
 		LANGUAGE CXX
-		CXX_STANDARD 17
+		CXX_STANDARD 20
 		CXX_STANDARD_REQUIRED ON
 	)
 endmacro()

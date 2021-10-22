@@ -21,8 +21,6 @@ void TestApp::init(){
 	auto resources = sys::resourceManager();
 	auto inputs = sys::inputManager();
 
-	sys::camera()->translate({ 0.f, 0.f, -2.f });
-
 	shapes::Cube cube(2.f);
 	auto terrainMap = HeightMapShape::createSimpleTerrain();
 	auto terrainMesh = terrainMap.generateMesh(2.f);
@@ -45,9 +43,9 @@ void TestApp::init(){
 
 	inputs->system()->onExitEvent(sys::exit);
 
-	auto kb = inputs->keyboard();
+	auto &&kb = inputs->managed<input::Keyboard>().front();
 
-	kb->onKeyEvent([this](input::Key key, bool pressed){
+	kb->keyEvent().addFn([this](input::Key key, bool pressed){
 		using Key = input::Key;
 
 		switch(key){
@@ -90,9 +88,9 @@ void TestApp::init(){
 		}
 	});
 
-	auto mouse = inputs->mouse();
+	auto &&mouse = inputs->managed<input::Mouse>().front();
 
-	mouse->onButtonEvent([this](input::MouseButton btn, bool pressed){
+	mouse->buttonEvent().addFn([this](input::MouseButton btn, bool pressed){
 		using Button = input::MouseButton;
 
 		if(btn == Button::left){
@@ -100,7 +98,7 @@ void TestApp::init(){
 		}
 	});
 
-	mouse->onMoveEvent([this](std::int32_t xrel, std::int32_t yrel){
+	mouse->moveEvent().addFn([this](std::int32_t xrel, std::int32_t yrel){
 		if(!rotateCam) return;
 
 		rot.x += xrel;
