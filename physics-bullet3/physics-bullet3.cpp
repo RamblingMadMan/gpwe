@@ -105,7 +105,7 @@ BodyShape::BodyShape(const gpwe::HeightMapShape *shape)
 	btVector3 aabbMax;
 	m_shape->getAabb(btTransform{}, aabbMin, aabbMax);
 
-	*property<"aabb"_cs>() = AABB{
+	property<"aabb"_cs>() = AABB{
 		glm::make_vec3(&aabbMin[0]),
 		glm::make_vec3(&aabbMax[0])
 	};

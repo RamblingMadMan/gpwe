@@ -28,8 +28,11 @@ namespace gpwe{
 	template<typename Derived, auto CreateFn, typename ... Props>
 	class Managed: public Object<Derived, Props...>, public ManagedBase{
 		public:
+			using ObjectType = Object<Derived, Props...>;
+			using ManagedType = Managed<Derived, CreateFn, Props...>;
+
 			explicit Managed(ObjectBase *parent_ = nullptr)
-				: Object<Derived, Props...>(parent_){}
+				: ObjectType(parent_){}
 
 			static constexpr auto createFn() noexcept{ return CreateFn; }
 
@@ -92,6 +95,11 @@ namespace gpwe{
 
 			template<typename T, typename ... Args>
 			T *create(Args &&... args){
+				static_assert(
+					hasManaged<T>(),
+					"Type is not a base of one of the managed types"
+				);
+
 				auto self = static_cast<Derived*>(this);
 				constexpr auto createFn = T::createFn();
 
@@ -128,7 +136,15 @@ namespace gpwe{
 
 			template<typename T>
 			static constexpr bool hasManaged(){
-				return meta::isIn(meta::type<T>, meta::types<Ts...>);
+				constexpr auto tRep = meta::repeat(meta::type<T>, meta::value<sizeof...(Ts)>);
+
+				return meta::anyOf(
+					meta::zip(
+						meta::fn<meta::IsBaseOf>,
+						meta::types<Ts...>,
+						meta::repeat(meta::type<T>, meta::value<sizeof...(Ts)>)
+					)
+				);
 			}
 
 		private:

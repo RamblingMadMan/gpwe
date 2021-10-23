@@ -187,7 +187,7 @@ namespace gpwe{
 			}
 
 			template<meta::CStr Name>
-			auto *property(){
+			decltype(auto) property(){
 				return getProperty<Name>(std::make_index_sequence<sizeof...(Props)>{});
 			}
 
@@ -204,16 +204,16 @@ namespace gpwe{
 			}
 
 			template<meta::CStr Name, Nat64 Idx, Nat64 ... Indices>
-			auto *getProperty(std::index_sequence<Idx, Indices...>){
+			decltype(auto) getProperty(std::index_sequence<Idx, Indices...>){
 				using Prop = meta::At<Idx, meta::Types<Props...>>;
 				if constexpr(Name == Prop::Name){
-					return &std::get<Idx>(m_objProps).value();
+					return std::get<Idx>(m_objProps).value();
 				}
 				else if constexpr(sizeof...(Indices)){
 					return getProperty<Name>(std::index_sequence<Indices...>{});
 				}
 				else{
-					return findProperty(strView(Name));
+					throw std::runtime_error("No property with given name");
 				}
 			}
 

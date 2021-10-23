@@ -41,7 +41,7 @@ namespace gpwe{
 	namespace detail{
 		template<typename Types, typename Void = void>
 		struct MapHelper{
-			using Results = meta::Map<std::decay, Types>;
+			using Results = meta::Map<meta::Fn<std::decay>, Types>;
 			using Result = meta::Instantiate<std::tuple, Results>;
 
 			template<typename ... Args>

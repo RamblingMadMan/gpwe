@@ -81,6 +81,7 @@ namespace gpwe::ui{
 				*layout = this;
 
 				m_widgets.emplace_back(widget);
+				return true;
 			}
 
 			bool removeWidget(WidgetBase *widget){

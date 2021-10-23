@@ -29,6 +29,14 @@ namespace gpwe::world{
 		public:
 			virtual ~Block() = default;
 
+			virtual Vector<Entity*> traceLine(
+				const Vec3 &from, const Vec3 &to, Nat8 maxHits = 1,
+				const Vector<Entity*> &ignoredEntities = {},
+				const Vector<ObjectClassBase*> &ignoredClasses = {}
+			){
+				return {};
+			}
+
 		protected:
 			virtual UniquePtr<Entity> doCreateEntity() = 0;
 			friend class Entity;
@@ -41,18 +49,14 @@ namespace gpwe::world{
 			Property<"position"_cs, Vec3>,
 			Property<"rotation"_cs, Vec3>,
 			Property<"scale"_cs, Vec3>,
-			Property<"aabb"_cs, Vec3>
+			Property<"aabb"_cs, AABB>
 		>
 	{
 		public:
-			Entity();
+			explicit Entity(Entity *parent_ = nullptr);
+
 			virtual ~Entity() = default;
-
-		protected:
-			Vec3 *position, *rotation, *scale, *aabb;
 	};
-
-	Vector<Entity*> traceLine(const Vec3 &from, const Vec3 &to, Nat8 maxHits = 1);
 }
 
 #define GPWE_WORLD_PLUGIN(type, name, author, major, minor, patch)\

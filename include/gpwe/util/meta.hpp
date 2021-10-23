@@ -29,11 +29,8 @@ namespace gpwe::meta{
 	template<typename T>
 	using Type = Types<T>;
 
-	template<template<typename...> typename ... Xs>
-	struct Fns{};
-
-	template<template<typename...> typename F>
-	using Fn = Fns<F>;
+	template<template<typename...> typename Xs, typename ... Bound>
+	struct Fn{};
 
 	template<Nat64 N>
 	struct CStr;
@@ -58,6 +55,9 @@ namespace gpwe::meta{
 	 * @defgroup MetaFns Meta-functions
 	 * @{
 	 */
+
+	template<typename Base, typename Derived>
+	struct IsBaseOf;
 
 	template<typename Xs>
 	struct HeadT;
@@ -86,23 +86,41 @@ namespace gpwe::meta{
 	template<typename X, typename Ys>
 	struct PrependT;
 
+	template<typename X, Nat64 N>
+	struct RepeatT;
+
+	template<typename X, Nat64 N>
+	using Repeat = typename RepeatT<X, N>::type;
+
 	template<typename X, typename Ys>
 	using Prepend = typename PrependT<X, Ys>::type;
 
 	template<typename X, typename Ys>
 	struct IsIn;
 
-	template<template<class...> typename F, typename Types>
+	template<typename F, typename Xs>
 	struct ApplyT;
 
-	template<template<class...> typename F, typename Types>
-	using Apply = typename ApplyT<F, Types>::type;
+	template<typename F, typename Xs>
+	using Apply = typename ApplyT<F, Xs>::type;
 
-	template<template<class...> typename F, typename Types>
+	template<typename F, typename Xs>
 	struct MapT;
 
-	template<template<class...> typename F, typename Types>
-	using Map = typename MapT<F, Types>::type;
+	template<typename F, typename Xs>
+	using Map = typename MapT<F, Xs>::type;
+
+	template<typename F, typename Xs, typename Ys>
+	struct ZipT;
+
+	template<typename F, typename Xs, typename Ys>
+	using Zip = typename ZipT<F, Xs, Ys>::type;
+
+	template<typename F, typename Xs>
+	struct BindT;
+
+	template<typename F, typename Xs>
+	using Bind = typename BindT<F, Xs>::type;
 
 	template<typename T>
 	using IsObject = Value<std::is_base_of_v<ObjectBase, T>>;
@@ -118,6 +136,9 @@ namespace gpwe::meta{
 
 	template<template<class...> typename T, typename Types>
 	using Instantiate = typename InstantiateT<T, Types>::type;
+
+	template<typename Xs>
+	struct AnyOf;
 
 	/**
 	 * @}
@@ -140,11 +161,11 @@ namespace gpwe::meta{
 	template<typename T>
 	inline constexpr Type<T> type;
 
-	template<template<typename...> typename ... Fs>
-	inline constexpr Fns<Fs...> fns;
+	template<template<typename...> typename F, typename ... Bound>
+	inline constexpr Fn<F, Bound...> fn;
 
-	template<template<typename...> typename F>
-	inline constexpr Fn<F> fn;
+	template<auto X>
+	inline constexpr Value<X> value;
 
 	/**
 	 *@brief Utility to create a list of values.
@@ -152,14 +173,9 @@ namespace gpwe::meta{
 	template<auto ... Xs>
 	inline constexpr Vector<Xs...> vector;
 
-	template<typename X, typename ... Xs>
-	inline constexpr auto append(Type<X>, Types<Xs...>){
-		return Append<X, Types<Xs...>>{};
-	}
-
-	template<typename X, typename ... Xs>
-	inline constexpr auto prepend(Type<X>, Types<Xs...>){
-		return Prepend<X, Types<Xs...>>{};
+	template<typename Base, typename Derived>
+	inline constexpr auto isBaseOf(Type<Base>, Type<Derived>){
+		return IsBaseOf<Base, Derived>{};
 	}
 
 	template<typename ... Xs>
@@ -173,18 +189,43 @@ namespace gpwe::meta{
 	}
 
 	template<typename X, typename ... Xs>
+	inline constexpr auto append(Type<X>, Types<Xs...>){
+		return Append<X, Types<Xs...>>{};
+	}
+
+	template<typename X, typename ... Xs>
+	inline constexpr auto prepend(Type<X>, Types<Xs...>){
+		return Prepend<X, Types<Xs...>>{};
+	}
+
+	template<typename X, Nat64 N>
+	inline constexpr auto repeat(Type<X>, Value<N>){
+		return Repeat<X, N>{};
+	}
+
+	template<typename X, typename ... Xs>
 	inline constexpr bool isIn(Type<X>, Types<Xs...>){
 		return IsIn<X, Types<Xs...>>{};
 	}
 
-	template<template<typename...> typename F, typename ... Xs>
-	inline constexpr auto apply(Fn<F>, Types<Xs...>){
-		return Apply<F, Types<Xs...>>{};
+	template<template<typename...> typename F, typename ... Bound, typename ... Xs>
+	inline constexpr auto apply(Fn<F, Bound...>, Types<Xs...>){
+		return Apply<Fn<F, Bound...>, Types<Xs...>>{};
 	}
 
-	template<template<typename...> typename F, typename ... Xs>
-	inline constexpr auto map(Fn<F>, Types<Xs...>){
-		return Map<F, Types<Xs...>>{};
+	template<template<typename...> typename F, typename ... Bound, typename ... Xs>
+	inline constexpr auto map(Fn<F, Bound...>, Types<Xs...>){
+		return Map<Fn<F, Bound...>, Types<Xs...>>{};
+	}
+
+	template<template<typename...> typename F, typename ... Bound, typename ... Xs, typename ... Ys>
+	inline constexpr auto zip(Fn<F, Bound...>, Types<Xs...>, Types<Ys...>){
+		return Zip<Fn<F, Bound...>, Types<Xs...>, Types<Ys...>>{};
+	}
+
+	template<template<typename...> typename F, typename ... Bound, typename X>
+	inline constexpr auto bind(Fn<F, Bound...>, X){
+		return Bind<Fn<F, Bound...>, X>{};
 	}
 
 	template<typename T>
@@ -197,6 +238,11 @@ namespace gpwe::meta{
 		return ObjectManager<Obj>{};
 	}
 
+	template<auto ... Vals>
+	inline constexpr bool anyOf(Vector<Vals...>){
+		return AnyOf<Vector<Vals...>>{};
+	}
+
 	/**
 	 * @}
 	 */
@@ -206,6 +252,9 @@ namespace gpwe::meta{
 	 * @warning This code is write-only
 	 * @{
 	 */
+
+	template<typename Base, typename Derived>
+	struct IsBaseOf: public Value<std::is_base_of_v<Base, Derived>>{};
 
 	template<typename X, typename ... Xs>
 	struct HeadT<Types<X, Xs...>>{
@@ -221,7 +270,7 @@ namespace gpwe::meta{
 
 	template<Nat64 Idx, typename X, typename ... Xs>
 	struct AtT<Idx, Types<X, Xs...>>{
-		using Result = AtT<Idx-1, Types<Xs...>>;
+		using Result = typename AtT<Idx-1, Types<Xs...>>::type;
 		using type = Result;
 	};
 
@@ -243,10 +292,51 @@ namespace gpwe::meta{
 		using type = Result;
 	};
 
+	template<template<typename...> typename F, typename ... Bound, typename ... Xs>
+	struct BindT<Fn<F, Bound...>, Types<Xs...>>{
+		using Result = Fn<F, Bound..., Xs...>;
+		using type = Result;
+	};
+
+	template<
+		template<typename...> typename F, typename ... Bound,
+		template<typename...> typename G, typename ... GBound
+	>
+	struct BindT<Fn<F, Bound...>, Fn<G, GBound...>>{
+		using Result = Fn<F, Bound..., Fn<G, GBound...>>;
+		using type = Result;
+	};
+
+	namespace detail{
+		template<typename X, Nat64 N, typename Ret>
+		struct RepeatHelper;
+
+		template<typename X, Nat64 N, typename ... Xs>
+		struct RepeatHelper<X, N, Types<Xs...>>{
+			using Result = typename RepeatHelper<X, N-1, Types<X, Xs...>>::type;
+			using type = Result;
+		};
+
+		template<typename X, typename ... Xs>
+		struct RepeatHelper<X, 0, Types<Xs...>>{
+			using Result = Types<Xs...>;
+			using type = Result;
+		};
+	}
+
+	template<typename X, Nat64 N>
+	struct RepeatT{
+		using Result = typename detail::RepeatHelper<X, N, Types<>>::type;
+		using type = Result;
+	};
+
 	template<auto Val>
 	struct Value{
+		using Result = Value<Val>;
+		using type = Result;
+
 		using Type = decltype(Val);
-		using type = Type;
+
 		constexpr operator Type() const noexcept{ return value(); }
 		static constexpr Type value(){ return Val; };
 	};
@@ -258,6 +348,15 @@ namespace gpwe::meta{
 	struct IsIn<X, Types<Y, Ys...>>: Value<
 		std::is_same_v<X, Y> || IsIn<X, Types<Ys...>>::value()
 	>{};
+
+	template<>
+	struct AnyOf<Types<>>: Value<false>{};
+
+	template<bool ... Xs>
+	struct AnyOf<Vector<true, Xs...>>: Value<true>{};
+
+	template<bool ... Xs>
+	struct AnyOf<Vector<false, Xs...>>: AnyOf<Vector<Xs...>>{};
 
 	namespace detail{
 		constexpr Nat64 cStrLen(char const *str, Nat64 count = 0){
@@ -406,15 +505,24 @@ namespace gpwe::meta{
 	template<typename T>
 	constexpr auto IsComplete = Value<IsCompleteT<T>::value>{};
 
-	template<template<class...> typename F, typename ... Xs>
-	struct ApplyT<F, Types<Xs...>>{
-		using Result = typename F<Xs...>::type;
+	template<template<class...> typename F, typename ... Bound, typename ... Xs>
+	struct ApplyT<Fn<F, Bound...>, Types<Xs...>>{
+		using Result = typename F<Bound..., Xs...>::type;
 		using type = Result;
 	};
 
-	template<template<class...> typename F, typename ... Xs>
-	struct MapT<F, Types<Xs...>>{
-		using Result = Types<typename F<Xs>::Result...>;
+	template<template<class...> typename F, typename ... Bound, typename ... Xs>
+	struct MapT<Fn<F, Bound...>, Types<Xs...>>{
+		using Result = Types<typename F<Bound..., Xs>::Result...>;
+		using type = Result;
+	};
+
+	template<
+		template<typename...> typename F, typename ... Bound,
+		typename ... Xs, typename ... Ys
+	>
+	struct ZipT<Fn<F, Bound...>, Types<Xs...>, Types<Ys...>>{
+		using Result = Types<Apply<Fn<F, Bound...>, Types<Xs, Ys>>...>;
 		using type = Result;
 	};
 

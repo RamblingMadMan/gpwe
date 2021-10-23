@@ -22,4 +22,5 @@ UniquePtr<world::Entity> worldSimple::Block::doCreateEntity(){
 }
 
 worldSimple::Entity::Entity(){}
+
 worldSimple::Entity::~Entity(){}

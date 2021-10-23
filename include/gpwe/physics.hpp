@@ -39,10 +39,6 @@ namespace gpwe::physics{
 			friend class Body;
 	};
 
-	struct AABB{
-		Vec3 min, max;
-	};
-
 	class BodyShape:
 		public Managed<
 			BodyShape, &World::doCreateBodyShape,
