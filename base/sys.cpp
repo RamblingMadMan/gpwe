@@ -26,13 +26,14 @@ using GPWEProc = void(*)();
 
 #include "gpwe/config.hpp"
 #include "gpwe/log.hpp"
+#include "gpwe/resource.hpp"
 #include "gpwe/input.hpp"
 #include "gpwe/sys.hpp"
 #include "gpwe/render.hpp"
 #include "gpwe/physics.hpp"
+#include "gpwe/world.hpp"
+#include "gpwe/ui.hpp"
 #include "gpwe/app.hpp"
-#include "gpwe/resource.hpp"
-#include "gpwe/Camera.hpp"
 
 #include "physfs.h"
 
@@ -190,8 +191,9 @@ sys::Manager::Manager(){}
 
 sys::Manager::~Manager(){
 	m_appManager.reset();
-	m_renderManager.reset();
+	m_uiManager.reset();
 	m_physicsManager.reset();
+	m_renderManager.reset();
 	m_inputManager.reset();
 	gpweSysManager = nullptr;
 }
@@ -219,6 +221,11 @@ void sys::Manager::loadPlugins(){
 		m_plugins.emplace_back(plugin);
 
 		switch(plugin->managerKind()){
+			case ManagerKind::input:{
+				m_inputPlugins.emplace_back(plugin);
+				break;
+			}
+
 			case ManagerKind::render:{
 				m_renderPlugins.emplace_back(plugin);
 				break;
@@ -229,8 +236,8 @@ void sys::Manager::loadPlugins(){
 				break;
 			}
 
-			case ManagerKind::input:{
-				m_inputPlugins.emplace_back(plugin);
+			case ManagerKind::world:{
+				m_worldPlugins.emplace_back(plugin);
 				break;
 			}
 
@@ -328,13 +335,16 @@ void sys::Manager::init(){
 		}
 
 		auto base = plugins[0]->createManager();
-		manager = UniquePtr(reinterpret_cast<decltype(manager.get())>(base.release()));
+		manager = UniquePtr(static_cast<decltype(manager.get())>(base.release()));
 	};
 
 	ensureManager("render", m_renderManager, m_renderPlugins);
 	ensureManager("physics", m_physicsManager, m_physicsPlugins);
 	ensureManager("input", m_inputManager, m_inputPlugins);
+	ensureManager("world", m_worldManager, m_worldPlugins);
 	ensureManager("app", m_appManager, m_appPlugins);
+
+	m_uiManager = makeUnique<UiManager>();
 
 	m_renderManager->setArg(m_renderArg);
 	m_renderManager->setRenderSize(m_rW, m_rH);
@@ -350,6 +360,8 @@ void sys::Manager::init(){
 	m_inputManager->init();
 	m_renderManager->init();
 	m_physicsManager->init();
+	m_worldManager->init();
+	m_uiManager->init();
 	m_appManager->init();
 
 	m_running = true;
@@ -625,11 +637,15 @@ Camera *sys::camera() noexcept{ return &gpweCamera; }
 
 sys::Manager *sys::manager() noexcept{ return gpweSysManager; }
 
+UiManager *sys::uiManager() noexcept{ return gpweSysManager->uiManager(); }
+
 app::Manager *sys::appManager() noexcept{ return gpweSysManager->appManager(); }
 
 render::Manager *sys::renderManager() noexcept{ return gpweSysManager->renderManager(); }
 
 physics::Manager *sys::physicsManager() noexcept{ return gpweSysManager->physicsManager(); }
+
+WorldManager *sys::worldManager() noexcept{ return gpweSysManager->worldManager(); }
 
 log::Manager *sys::logManager() noexcept{
 	if(!gpweSysManager) return &gpweDefaultLogManager;

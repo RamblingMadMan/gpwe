@@ -30,7 +30,7 @@ inline Iter binary_find(Iter begin, Iter end, T val){
 	}
 }
 
-GPWE_RENDERER(gpwe::RendererGL43, "OpenGL 4.3", "RamblingMad", 0, 0, 0)
+GPWE_RENDER_PLUGIN(gpwe::RendererGL43, "OpenGL 4.3", "RamblingMad", 0, 0, 0)
 
 struct DrawElementsIndirectCommand{
 	GLuint count;

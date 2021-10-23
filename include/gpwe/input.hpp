@@ -8,7 +8,7 @@
 #include "Manager.hpp"
 
 namespace gpwe::input{
-	class System: public Object<meta::CStr("input::System")>{
+	class System: public Object<System>{
 		public:
 			using ExitEventFn = Fn<void()>;
 
@@ -124,7 +124,7 @@ namespace gpwe::input{
 			friend class Gamepad;
 	};
 
-	class Keyboard: public Managed<meta::CStr("input::Keyboard"), &Manager::doCreateKeyboard>{
+	class Keyboard: public Managed<Keyboard, &Manager::doCreateKeyboard>{
 		public:
 			using KeyEvent = Event<Key, bool>;
 			using KeyEventFn = Fn<void(Key, bool)>;
@@ -142,23 +142,27 @@ namespace gpwe::input{
 			List<KeyEventFn> m_keyFns;
 	};
 
-	class Mouse: public Managed<meta::CStr("input::Mouse"), &Manager::doCreateMouse>{
+	class Mouse: public Managed<Mouse, &Manager::doCreateMouse>{
 		public:
 			using ButtonEvent = Event<MouseButton, bool>;
 			using MoveEvent = Event<Int32, Int32>;
+			using ScrollEvent = Event<Int32, Int32>;
 
 			explicit Mouse(std::uint32_t id_) noexcept
 				: m_id(id_){}
 
-			virtual void captureMouse(bool enabled = true){}
+			virtual void setCapture(bool enabled = true){}
+			virtual void setRelativeMode(bool enabled = true){}
 
 			ButtonEvent &buttonEvent() noexcept{ return m_btnEvent; }
 			MoveEvent &moveEvent() noexcept{ return m_moveEvent; }
+			ScrollEvent &scrollEvent() noexcept{ return m_scrollEvent; }
 
 		private:
 			std::uint32_t m_id;
 			ButtonEvent m_btnEvent;
 			MoveEvent m_moveEvent;
+			ScrollEvent m_scrollEvent;
 	};
 
 	enum class GamepadButton{
@@ -171,7 +175,7 @@ namespace gpwe::input{
 		count
 	};
 
-	class Gamepad: public Managed<meta::CStr("InputGamepad"), &Manager::doCreateGamepad>{
+	class Gamepad: public Managed<Gamepad, &Manager::doCreateGamepad>{
 		public:
 			using ButtonEvent = Event<GamepadButton, bool>;
 
@@ -188,7 +192,7 @@ namespace gpwe::input{
 	};
 }
 
-#define GPWE_INPUT(type, name, author, major, minor, patch)\
+#define GPWE_INPUT_PLUGIN(type, name, author, major, minor, patch)\
 	GPWE_PLUGIN(InputManager, type, name, author, major, minor, patch)
 
 #endif // !GPWE_INPUT_HPP

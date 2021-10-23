@@ -196,7 +196,7 @@ namespace gpwe{
 				}
 			}
 
-			static HeightMapShape createSimpleTerrain(Nat16 resolution = 256, float scale = 100.f);
+			static HeightMapShape createSimpleTerrain(Nat16 resolution = 256);
 
 			Kind kind() const noexcept override{ return Kind::heightmap; }
 
@@ -204,7 +204,7 @@ namespace gpwe{
 			Nat16 height() const noexcept{ return m_h; }
 			const float *values() const noexcept{ return m_values.data(); }
 
-			shapes::TriangleMesh generateMesh(float xyScale = 100.f) const;
+			shapes::TriangleMesh generateMesh(float xyScale = 100.f, float maxHeight = 1.f) const;
 
 		private:
 			Nat16 m_w, m_h;

@@ -12,46 +12,6 @@
 
 #include "Manager.hpp"
 
-namespace gpwe::log{
-	class Manager;
-}
-
-namespace gpwe::sys{
-	class Manager;
-}
-
-namespace gpwe::resource{
-	class Manager;
-	class Plugin;
-}
-
-namespace gpwe::input{
-	class Manager;
-}
-
-namespace gpwe::render{
-	class Manager;
-}
-
-namespace gpwe::physics{
-	class Manager;
-}
-
-namespace gpwe::app{
-	class Manager;
-}
-
-namespace gpwe{
-	class Camera;
-	using SysManager = sys::Manager;
-	using LogManager = log::Manager;
-	using RenderManager = render::Manager;
-	using PhysicsManager = physics::Manager;
-	using InputManager = input::Manager;
-	using ResourceManager = resource::Manager;
-	using AppManager = app::Manager;
-}
-
 namespace gpwe::sys{
 	using PresentFn = Fn<void()>;
 
@@ -91,15 +51,18 @@ namespace gpwe::sys{
 
 			const Vector<resource::Plugin*> &plugins() const noexcept{ return m_plugins; }
 
-			const Vector<resource::Plugin*> &renderPlugins() const noexcept{ return m_plugins; }
-			const Vector<resource::Plugin*> &physicsPlugins() const noexcept{ return m_plugins; }
-			const Vector<resource::Plugin*> &inputPlugins() const noexcept{ return m_plugins; }
-			const Vector<resource::Plugin*> &appPlugins() const noexcept{ return m_plugins; }
+			const Vector<resource::Plugin*> &inputPlugins() const noexcept{ return m_inputPlugins; }
+			const Vector<resource::Plugin*> &renderPlugins() const noexcept{ return m_renderPlugins; }
+			const Vector<resource::Plugin*> &physicsPlugins() const noexcept{ return m_physicsPlugins; }
+			const Vector<resource::Plugin*> &worldPlugins() const noexcept{ return m_worldPlugins; }
+			const Vector<resource::Plugin*> &appPlugins() const noexcept{ return m_appPlugins; }
 
 			LogManager *logManager() noexcept{ return m_logManager.get(); }
+			InputManager *inputManager() noexcept{ return m_inputManager.get(); }
 			RenderManager *renderManager() noexcept{ return m_renderManager.get(); }
 			PhysicsManager *physicsManager() noexcept{ return m_physicsManager.get(); }
-			InputManager *inputManager() noexcept{ return m_inputManager.get(); }
+			WorldManager *worldManager() noexcept{ return m_worldManager.get(); }
+			UiManager *uiManager() noexcept{ return m_uiManager.get(); }
 			AppManager *appManager() noexcept{ return m_appManager.get(); }
 
 		private:
@@ -132,6 +95,8 @@ namespace gpwe::sys{
 			Ptr<RenderManager> m_renderManager;
 			Ptr<PhysicsManager> m_physicsManager;
 			Ptr<InputManager> m_inputManager;
+			Ptr<WorldManager> m_worldManager;
+			Ptr<UiManager> m_uiManager;
 			Ptr<AppManager> m_appManager;
 
 			Vector<resource::Plugin*> m_plugins;
@@ -139,6 +104,7 @@ namespace gpwe::sys{
 			Vector<resource::Plugin*> m_renderPlugins;
 			Vector<resource::Plugin*> m_physicsPlugins;
 			Vector<resource::Plugin*> m_inputPlugins;
+			Vector<resource::Plugin*> m_worldPlugins;
 			Vector<resource::Plugin*> m_appPlugins;
 
 			enum class ThreadIdx{
@@ -177,6 +143,8 @@ namespace gpwe::sys{
 	InputManager *inputManager() noexcept;
 	RenderManager *renderManager() noexcept;
 	PhysicsManager *physicsManager() noexcept;
+	WorldManager *worldManager() noexcept;
+	UiManager *uiManager() noexcept;
 	AppManager *appManager() noexcept;
 }
 
@@ -184,6 +152,8 @@ namespace gpwe::resource{ inline Manager *manager(){ return sys::resourceManager
 namespace gpwe::input{ inline Manager *manager(){ return sys::inputManager(); } }
 namespace gpwe::render{ inline Manager *manager(){ return sys::renderManager(); } }
 namespace gpwe::physics{ inline Manager *manager(){ return sys::physicsManager(); } }
+namespace gpwe::world{ inline Manager *manager(){ return sys::worldManager(); } }
+namespace gpwe::ui{ inline Manager *manager(){ return sys::uiManager(); } }
 namespace gpwe::app{ inline Manager *manager(){ return sys::appManager(); } }
 
 #define GPWE_SYS(type, name, author, major, minor, patch)\

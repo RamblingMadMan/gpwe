@@ -63,19 +63,20 @@ set(
 	${GPWE_INCLUDE_DIR}/gpwe/util/noise.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/math.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/util/algo.hpp
-	${GPWE_INCLUDE_DIR}/gpwe/log.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Version.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Manager.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/log.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/resource.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/sys.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/input.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/render.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/physics.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/ui.hpp
+	${GPWE_INCLUDE_DIR}/gpwe/world.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/app.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/embed.hpp
-	${GPWE_INCLUDE_DIR}/gpwe/input.hpp
-	${GPWE_INCLUDE_DIR}/gpwe/resource.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Camera.hpp
 	${GPWE_INCLUDE_DIR}/gpwe/Shape.hpp
-	${GPWE_INCLUDE_DIR}/gpwe/World.hpp
 )
 
 configure_file(${GPWE_INCLUDE_DIR}/gpwe/config.hpp.in include/gpwe/config.hpp)
@@ -170,6 +171,7 @@ target_link_libraries(
 add_subdirectory(base)
 add_subdirectory(renderer-gl43)
 add_subdirectory(physics-bullet3)
+add_subdirectory(world-simple)
 
 if(GPWE_BUILD_DOCS)
 	add_subdirectory(docs)

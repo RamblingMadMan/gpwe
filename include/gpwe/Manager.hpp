@@ -1,6 +1,11 @@
 #ifndef GPWE_MANAGER_HPP
 #define GPWE_MANAGER_HPP 1
 
+/**
+ * @defgroup Manager Managers
+ * @{
+ */
+
 #include "util/Object.hpp"
 #include "util/algo.hpp"
 #include "util/List.hpp"
@@ -8,6 +13,55 @@
 #include "Version.hpp"
 
 namespace gpwe{
+	// f$%*n diamond inheritance
+	class ManagedBase: public virtual ObjectBase{
+		public:
+			virtual ~ManagedBase() = default;
+	};
+
+	/**
+	 * @brief An object managed by a manager.
+	 * @tparam Derived the type deriving this class.
+	 * @tparam CreateFn the function used to create instances of \ref Derived
+	 * @tparam Props a list of \ref Property types
+	 */
+	template<typename Derived, auto CreateFn, typename ... Props>
+	class Managed: public Object<Derived, Props...>, public ManagedBase{
+		public:
+			explicit Managed(ObjectBase *parent_ = nullptr)
+				: Object<Derived, Props...>(parent_){}
+
+			static constexpr auto createFn() noexcept{ return CreateFn; }
+
+			virtual ~Managed() = default;
+	};
+
+	/**
+	 * @brief Enum identifying different kinds of managers.
+	 */
+	enum class ManagerKind: std::uint16_t{
+		data,
+		plugin,
+		app,
+		render,
+		physics,
+		input,
+		sys,
+		log,
+		world,
+		ui,
+
+		count
+	};
+
+	/**
+	 * @brief Base class of the real meat and two veg manager.
+	 */
+	class ManagerBase{
+		public:
+			virtual ~ManagerBase() = default;
+	};
+
 	namespace detail{
 		template<typename T>
 		class ManagerStorage{
@@ -19,37 +73,12 @@ namespace gpwe{
 		};
 	}
 
-	// f$%*n diamond inheritance
-	class ManagedBase: public virtual ObjectBase{
-		public:
-			virtual ~ManagedBase() = default;
-	};
-
-	template<auto ObjName, auto CreateFn, typename ... Props>
-	class Managed: public Object<ObjName, Props...>, public ManagedBase{
-		public:
-			static constexpr auto createFn() noexcept{ return CreateFn; }
-
-			virtual ~Managed() = default;
-	};
-
-	enum class ManagerKind: std::uint16_t{
-		data = 1,
-		plugin = 1 << 1,
-		app = 1 << 2,
-		render = 1 << 3,
-		physics = 1 << 4,
-		input = 1 << 5,
-		sys = 1 << 6,
-		log = 1 << 7,
-		world = 1 << 8
-	};
-
-	class ManagerBase{
-		public:
-			virtual ~ManagerBase() = default;
-	};
-
+	/**
+	 * @brief Manager class used throughout the engine to manage objects.
+	 * @tparam Derived The type deriving this class. curious...
+	 * @tparam Kind_ Self-explanatory
+	 * @tparam Ts List of object types managed by the manager
+	 */
 	template<typename Derived, ManagerKind Kind_, typename ... Ts>
 	class Manager: public ManagerBase, public detail::ManagerStorage<Ts>...{
 		public:
@@ -97,6 +126,11 @@ namespace gpwe{
 				return this->ManagerStorage<T>::ptrs();
 			}
 
+			template<typename T>
+			static constexpr bool hasManaged(){
+				return meta::isIn(meta::type<T>, meta::types<Ts...>);
+			}
+
 		private:
 			template<typename T>
 			T *insertUnique(UniquePtr<T> ptr){
@@ -126,6 +160,17 @@ namespace gpwe{
 	};
 }
 
+/**
+ * @brief Defines a plugin interface within a plugin.
+ * @param kind gpwe::ManagerKind without the prefix
+ * @param type the type of the new manager
+ * @param name the name of the plugin
+ * @param author the original creator of the plugin
+ * @param major major version
+ * @param minor minor version
+ * @param patch patch version
+ * @note Versions are expected to follow <a href="https://semver.org">semantic versioning</a>.
+ */
 #define GPWE_PLUGIN(kind, type, name, author, major, minor, patch)\
 extern "C" const char *gpwePlugin##Name(){ return name; }\
 extern "C" const char *gpwePlugin##Author(){ return author; }\
@@ -135,5 +180,9 @@ extern "C" gpwe::ManagerBase *gpwePluginCreateManager(){\
 	auto mem = gpwe::sys::alloc(sizeof(type));\
 	return new(mem) type();\
 }
+
+/**
+ * @}
+ */
 
 #endif // !GPWE_MANAGER_HPP 1

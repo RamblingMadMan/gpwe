@@ -14,6 +14,7 @@ namespace gpwe::render{
 	class Framebuffer;
 	class Program;
 	class Pipeline;
+	class Pass;
 
 	enum class TextureKind{
 		// Color formats
@@ -97,7 +98,7 @@ namespace gpwe::render{
 		}
 	}
 
-	class InstanceData: public Object<"render::InstanceData"_cs>{
+	class InstanceData: public Object<InstanceData>{
 		public:
 			DataType type() const noexcept{ return m_type; }
 			std::size_t size() const noexcept{ return m_len * dataTypeSize(m_type); }
@@ -113,6 +114,8 @@ namespace gpwe::render{
 	};
 
 	class Manager:
+			public Object<Manager>,
+
 			public gpwe::Manager<
 				Manager, ManagerKind::render,
 				Group, Texture, Framebuffer, Program, Pipeline
@@ -177,7 +180,7 @@ namespace gpwe::render{
 	class Instance;
 
 	class Group:
-			public gpwe::Managed<"render::Group"_cs, &Manager::doCreateGroup>,
+			public gpwe::Managed<Group, &Manager::doCreateGroup>,
 			public gpwe::Manager<Group, ManagerKind::data, Instance>
 	{
 		public:
@@ -213,7 +216,7 @@ namespace gpwe::render{
 			friend class Instance;
 	};
 
-	class Instance: public gpwe::Managed<"render::Instance"_cs, &Group::doCreateInstance>{
+	class Instance: public gpwe::Managed<Instance, &Group::doCreateInstance>{
 		public:
 			Group *group() noexcept{ return m_group; }
 			const Group *group() const noexcept{ return m_group; }
@@ -228,14 +231,14 @@ namespace gpwe::render{
 			std::uint32_t m_idx;
 	};
 
-	class Texture: public gpwe::Managed<"render::Texture"_cs, &Manager::doCreateTexture>{
+	class Texture: public gpwe::Managed<Texture, &Manager::doCreateTexture>{
 		public:
 			using Kind = TextureKind;
 
 			virtual ~Texture() = default;
 	};
 
-	class Framebuffer: public gpwe::Managed<"render::Framebuffer"_cs, &Manager::doCreateFramebuffer>{
+	class Framebuffer: public gpwe::Managed<Framebuffer, &Manager::doCreateFramebuffer>{
 		public:
 			enum class Mode{
 				write, read, readWrite,
@@ -253,7 +256,7 @@ namespace gpwe::render{
 			virtual Texture::Kind attachmentKind(std::uint32_t idx) const noexcept = 0;
 	};
 
-	class Program: public gpwe::Managed<"render::Program"_cs, &Manager::doCreateProgram>{
+	class Program: public gpwe::Managed<Program, &Manager::doCreateProgram>{
 		public:
 			using Kind = ProgramKind;
 
@@ -264,7 +267,7 @@ namespace gpwe::render{
 
 	class Pipeline:
 		public gpwe::Managed<
-			"render::Pipeline"_cs,
+			Pipeline,
 			&Manager::doCreatePipeline
 		>
 	{
@@ -273,9 +276,14 @@ namespace gpwe::render{
 
 			virtual void use() const noexcept = 0;
 	};
+
+	class Pass{
+		public:
+			virtual ~Pass() = default;
+	};
 }
 
-#define GPWE_RENDERER(type, name, author, major, minor, patch)\
+#define GPWE_RENDER_PLUGIN(type, name, author, major, minor, patch)\
 	GPWE_PLUGIN(render, type, name, author, major, minor, patch)
 
 #endif // !GPWE_RENDER_HPP

@@ -22,7 +22,7 @@ namespace gpwe::physics{
 	};
 
 	class World :
-		public Managed<"physics::World"_cs, &Manager::doCreateWorld>,
+		public Managed<World, &Manager::doCreateWorld>,
 		public gpwe::Manager<World, ManagerKind::data, BodyShape, Body>
 	{
 		public:
@@ -39,12 +39,21 @@ namespace gpwe::physics{
 			friend class Body;
 	};
 
-	class BodyShape: public Managed<"physics::BodyShape"_cs, &World::doCreateBodyShape>{
+	struct AABB{
+		Vec3 min, max;
+	};
+
+	class BodyShape:
+		public Managed<
+			BodyShape, &World::doCreateBodyShape,
+			Property<"aabb"_cs, AABB>
+		>
+	{
 		public:
 			virtual ~BodyShape() = default;
 	};
 
-	class Body: public Managed<"physics::Body"_cs, &World::doCreateBody>{
+	class Body: public Managed<Body, &World::doCreateBody>{
 		public:
 			virtual ~Body() = default;
 
@@ -53,7 +62,7 @@ namespace gpwe::physics{
 	};
 }
 
-#define GPWE_PHYSICS(type, name, author, major, minor, patch)\
+#define GPWE_PHYSICS_PLUGIN(type, name, author, major, minor, patch)\
 	GPWE_PLUGIN(physics, type, name, author, major, minor, patch)
 
 #endif // !GPWE_PHYSICS_HPP

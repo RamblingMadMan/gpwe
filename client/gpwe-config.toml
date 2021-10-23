@@ -1,0 +1,5 @@
+[Plugins]
+app = ["game", "test"]
+physics = ["bullet3"]
+renderer = ["gl43"]
+world = ["simple", "octree"]

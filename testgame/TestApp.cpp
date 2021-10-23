@@ -11,7 +11,7 @@
 
 using namespace gpwe;
 
-GPWE_APP(TestApp, "TESTGAME", "RamblingMad", 0, 0, 0)
+GPWE_APP_PLUGIN(TestApp, "TESTGAME", "RamblingMad", 0, 0, 0)
 
 TestApp::TestApp(){}
 
@@ -23,7 +23,7 @@ void TestApp::init(){
 
 	shapes::Cube cube(2.f);
 	auto terrainMap = HeightMapShape::createSimpleTerrain();
-	auto terrainMesh = terrainMap.generateMesh(2.f);
+	auto terrainMesh = terrainMap.generateMesh(20.f, 1.f);
 	terrainGroup = sys::renderManager()->createGroup(&terrainMesh);
 	terrainInst = terrainGroup->create<gpwe::render::Instance>();
 
@@ -90,10 +90,12 @@ void TestApp::init(){
 
 	auto &&mouse = inputs->managed<input::Mouse>().front();
 
-	mouse->buttonEvent().addFn([this](input::MouseButton btn, bool pressed){
+	mouse->buttonEvent().addFn([&mouse, this](input::MouseButton btn, bool pressed){
 		using Button = input::MouseButton;
 
-		if(btn == Button::left){
+		if(btn == Button::right){
+			mouse->setCapture(pressed);
+			mouse->setRelativeMode(pressed);
 			rotateCam = pressed;
 		}
 	});
@@ -104,9 +106,17 @@ void TestApp::init(){
 		rot.x += xrel;
 		rot.y += yrel;
 	});
+
+	mouse->scrollEvent().addFn([this](Int32 xrel, Int32 yrel){
+		if(!rotateCam) return;
+
+		moveSpeed += yrel * 0.25f;
+	});
 }
 
 void TestApp::update(float dt){
+	if(!rotateCam) return;
+
 	auto cam = sys::camera();
 
 	auto moveForward = movement.z * cam->forward();
@@ -123,9 +133,7 @@ void TestApp::update(float dt){
 		cam->translate(glm::normalize(moveAmnt) * moveSpeed * dt);
 	}
 
-	if(rotateCam){
-		rot *= float(2.0 * M_PI) * rotSpeed * dt;
-		cam->rotate(glm::radians(-rot.x), glm::vec3(0.f, 1.f, 0.f));
-		cam->rotate(glm::radians(rot.y), glm::vec3(1.f, 0.f, 0.f));
-	}
+	rot *= float(2.0 * M_PI) * rotSpeed * dt;
+	cam->rotate(glm::radians(-rot.x), glm::vec3(0.f, 1.f, 0.f));
+	cam->rotate(glm::radians(rot.y), glm::vec3(1.f, 0.f, 0.f));
 }

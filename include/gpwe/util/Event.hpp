@@ -22,7 +22,7 @@ namespace gpwe{
 			}
 
 			template<typename ... UVals>
-			void emit_(UVals &&... vals){
+			void emit(UVals &&... vals){
 				for(auto &&f : m_slots){
 					f(std::forward<UVals>(vals)...);
 				}

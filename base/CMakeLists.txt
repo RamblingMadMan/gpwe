@@ -9,6 +9,8 @@ set(GPWE_BASE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "GPWE base directory"
 
 set(
 	GPWE_BASE_SOURCES
+	meta.cpp
+	Object.cpp
 	Thread.cpp
 	sys.cpp
 	input.cpp
@@ -17,6 +19,7 @@ set(
 	Camera.cpp
 	Shape.cpp
 	World.cpp
+	ui.cpp
 )
 
 add_library(gpwe-base SHARED ${GPWE_INCLUDES} ${GPWE_BASE_SOURCES})

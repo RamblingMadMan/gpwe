@@ -96,8 +96,14 @@ namespace {
 
 class SDLMouse: public input::Mouse{
 	public:
-		void captureMouse(bool enabled) override{
+		SDLMouse(Nat32 id_): Mouse(id_){}
+
+		void setCapture(bool enabled) override{
 			SDL_CaptureMouse(enabled ? SDL_TRUE : SDL_FALSE);
+		}
+
+		void setRelativeMode(bool enabled) override{
+			SDL_SetRelativeMouseMode(enabled ? SDL_TRUE : SDL_FALSE);
 		}
 };
 
@@ -125,7 +131,7 @@ class SDLInputManager: public input::Manager{
 						if(key == input::Key::count) break;
 
 						for(auto &&kb : managed<input::Keyboard>()){
-							kb->keyEvent().emit_(key, ev.type == SDL_KEYDOWN);
+							kb->keyEvent().emit(key, ev.type == SDL_KEYDOWN);
 						}
 
 						break;
@@ -137,7 +143,22 @@ class SDLInputManager: public input::Manager{
 						if(btn == input::MouseButton::count) break;
 
 						for(auto &&mouse : managed<input::Mouse>()){
-							mouse->buttonEvent().emit_(btn, ev.type == SDL_MOUSEBUTTONDOWN);
+							mouse->buttonEvent().emit(btn, ev.type == SDL_MOUSEBUTTONDOWN);
+						}
+
+
+
+						break;
+					}
+
+					case SDL_MOUSEWHEEL:{
+						if(ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED){
+							ev.wheel.x *= -1;
+							ev.wheel.y *= -1;
+						}
+
+						for(auto &&mouse : managed<input::Mouse>()){
+							mouse->scrollEvent().emit(ev.wheel.x, ev.wheel.y);
 						}
 
 						break;
@@ -145,7 +166,7 @@ class SDLInputManager: public input::Manager{
 
 					case SDL_MOUSEMOTION:{
 						for(auto &&mouse : managed<input::Mouse>()){
-							mouse->moveEvent().emit_(ev.motion.xrel, ev.motion.yrel);
+							mouse->moveEvent().emit(ev.motion.xrel, ev.motion.yrel);
 						}
 
 						break;
@@ -154,6 +175,10 @@ class SDLInputManager: public input::Manager{
 					default: break;
 				}
 			}
+		}
+
+		UniquePtr<input::Mouse> doCreateMouse(Nat32 id) override{
+			return makeUnique<SDLMouse>(id);
 		}
 
 		SDL_Event ev;

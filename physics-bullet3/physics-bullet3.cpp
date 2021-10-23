@@ -27,7 +27,7 @@
 
 #include "physics-bullet3.hpp"
 
-GPWE_PHYSICS(gpwe::physics::bullet3::Manager, "Bullet Physics Plugin", "Hamsmith", 0, 0, 0)
+GPWE_PHYSICS_PLUGIN(gpwe::physics::bullet3::Manager, "Bullet Physics Plugin", "Hamsmith", 0, 0, 0)
 
 using namespace gpwe;
 using namespace gpwe::physics::bullet3;
@@ -100,6 +100,15 @@ BodyShape::BodyShape(const gpwe::HeightMapShape *shape)
 	}
 
 	m_shape = makeUnique<btHeightfieldTerrainShape>(shape->width(), shape->height(), shape->values(), 0.f, 1.f, 1, false);
+
+	btVector3 aabbMin;
+	btVector3 aabbMax;
+	m_shape->getAabb(btTransform{}, aabbMin, aabbMax);
+
+	*property<"aabb"_cs>() = AABB{
+		glm::make_vec3(&aabbMin[0]),
+		glm::make_vec3(&aabbMax[0])
+	};
 }
 
 BodyShape::~BodyShape(){}

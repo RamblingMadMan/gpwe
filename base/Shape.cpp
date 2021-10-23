@@ -139,7 +139,7 @@ shapes::Cuboid::Cuboid(HalfT, float hw, float hh, float hd)
 		)
 {}
 
-HeightMapShape HeightMapShape::createSimpleTerrain(Nat16 resolution, float scale){
+HeightMapShape HeightMapShape::createSimpleTerrain(Nat16 resolution){
 	// straight ripped from the FastNoise2 library tests
 	// https://github.com/Auburn/FastNoise2/blob/master/tests/FastNoiseCpp11Include.cpp
 	auto noiseNode = FastNoise::New<FastNoise::FractalFBm>();
@@ -152,27 +152,29 @@ HeightMapShape HeightMapShape::createSimpleTerrain(Nat16 resolution, float scale
 
 	noiseNode->GenUniformGrid2D(heights.data(), 0, 0, resolution, resolution, 0.02f, 1337);
 
+	Vector<float> heightNoise;
+	heightNoise.resize(resolution * resolution);
+
+	noiseNode->GenUniformGrid2D(heightNoise.data(), 0, 0, resolution, resolution, 1.f / 3.f, 1337);
+
+	Vector<float> finalHeights;
+	finalHeights.resize(resolution * resolution);
+
 	std::transform(
-		begin(heights), end(heights),
-		begin(heights),
-		[scale](float y){ return y * scale; }
+		heights.begin(), heights.end(),
+		heightNoise.begin(),
+		finalHeights.begin(),
+		[](auto h, auto n){ return h - (n * 0.01f); }
 	);
 
-	return HeightMapShape(resolution, resolution, std::move(heights));
+	return HeightMapShape(resolution, resolution, std::move(finalHeights));
 }
 
-shapes::TriangleMesh HeightMapShape::generateMesh(float scale) const{
-	const float aspect = m_w > m_h
-						 ? float(m_w) / float(m_h)
-						 : float(m_h) / float(m_w);
+shapes::TriangleMesh HeightMapShape::generateMesh(float scale, float maxHeight) const{
+	const float aspect = float(m_w) / float(m_h);
 
-	const float dimX = m_w > m_h
-					   ? m_w * scale * aspect
-					   : m_w * scale;
-
-	const float dimY = m_w > m_h
-					   ? m_h * scale
-					   : m_h * scale * aspect;
+	const float dimX = m_w * scale;
+	const float dimY = m_h * scale * aspect;
 
 	Nat32 numPoints = m_w * m_h;
 	Nat32 numIndices = ((m_w-1) * (m_h-1)) * 2 * 3;
@@ -189,15 +191,16 @@ shapes::TriangleMesh HeightMapShape::generateMesh(float scale) const{
 	const float yStep = 1.f / m_h;
 	const float xStep = 1.f / m_w;
 
+	const float xyOff = scale * -0.5f;
+
 	for(Nat16 y = 0; y < m_h; y++){
 		const Nat16 yIdx = y * m_w;
 		const float yRel = y * yStep;
-		const float yOff = yRel - 0.5f;
 		for(Nat16 x = 0; x < m_w; x++){
 			const Nat16 idx = yIdx + x;
 			const float xRel = x * xStep;
-			const float xOff = xRel - 0.5f;
-			verts.emplace_back(xOff * dimX, m_values[idx], yOff * dimY);
+
+			verts.emplace_back(xyOff + (xRel * scale), m_values[idx] * maxHeight, xyOff + (yRel * scale));
 			norms.emplace_back(Vec4(0.f)); // Zeroed for face average
 			uvs.emplace_back(glm::vec2(xRel, 1.f - yRel));
 		}
